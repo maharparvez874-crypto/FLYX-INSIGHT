@@ -1,0 +1,192 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630">
+  <defs>
+    <!-- Card Background Gradient -->
+    <linearGradient id="og-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#070B14"/>
+      <stop offset="50%" stop-color="#0B1325"/>
+      <stop offset="100%" stop-color="#050810"/>
+    </linearGradient>
+
+    <!-- Ambient Radial Glows -->
+    <radialGradient id="og-glow-gold" cx="30%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#FFB800" stop-opacity="0.18"/>
+      <stop offset="60%" stop-color="#FFB800" stop-opacity="0.03"/>
+      <stop offset="100%" stop-color="#FFB800" stop-opacity="0"/>
+    </radialGradient>
+
+    <radialGradient id="og-glow-cyan" cx="80%" cy="30%" r="45%">
+      <stop offset="0%" stop-color="#00F2FE" stop-opacity="0.15"/>
+      <stop offset="60%" stop-color="#3B82F6" stop-opacity="0.02"/>
+      <stop offset="100%" stop-color="#3B82F6" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Typography Gradients -->
+    <linearGradient id="text-gold" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#FFE082"/>
+      <stop offset="50%" stop-color="#FFB800"/>
+      <stop offset="100%" stop-color="#FFA000"/>
+    </linearGradient>
+
+    <linearGradient id="text-cyan" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#00F2FE"/>
+      <stop offset="50%" stop-color="#38BDF8"/>
+      <stop offset="100%" stop-color="#60A5FA"/>
+    </linearGradient>
+
+    <linearGradient id="border-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFB800" stop-opacity="0.5"/>
+      <stop offset="50%" stop-color="#38BDF8" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#FFB800" stop-opacity="0.2"/>
+    </linearGradient>
+
+    <!-- Embedded Master Emblem Filter -->
+    <radialGradient id="emblem-bg" cx="50%" cy="36%" r="64%">
+      <stop offset="0%" stop-color="#16233F"/>
+      <stop offset="45%" stop-color="#0D1629"/>
+      <stop offset="80%" stop-color="#070C18"/>
+      <stop offset="100%" stop-color="#03060C"/>
+    </radialGradient>
+    <linearGradient id="emblem-gold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFF2B2"/>
+      <stop offset="25%" stop-color="#FFC727"/>
+      <stop offset="60%" stop-color="#E5A100"/>
+      <stop offset="100%" stop-color="#FFD54F"/>
+    </linearGradient>
+    <linearGradient id="emblem-cyan" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#00F2FE"/>
+      <stop offset="50%" stop-color="#38BDF8"/>
+      <stop offset="100%" stop-color="#1D4ED8"/>
+    </linearGradient>
+  </defs>
+
+  <!-- 1. Background Fill & Cyber Grid -->
+  <rect width="1200" height="630" fill="url(#og-bg)"/>
+  <rect width="1200" height="630" fill="url(#og-glow-gold)"/>
+  <rect width="1200" height="630" fill="url(#og-glow-cyan)"/>
+
+  <!-- Subtle Cyber Grid Pattern -->
+  <g stroke="#FFFFFF" stroke-opacity="0.03" stroke-width="1">
+    <line x1="100" y1="0" x2="100" y2="630"/>
+    <line x1="200" y1="0" x2="200" y2="630"/>
+    <line x1="300" y1="0" x2="300" y2="630"/>
+    <line x1="400" y1="0" x2="400" y2="630"/>
+    <line x1="500" y1="0" x2="500" y2="630"/>
+    <line x1="600" y1="0" x2="600" y2="630"/>
+    <line x1="700" y1="0" x2="700" y2="630"/>
+    <line x1="800" y1="0" x2="800" y2="630"/>
+    <line x1="900" y1="0" x2="900" y2="630"/>
+    <line x1="1000" y1="0" x2="1000" y2="630"/>
+    <line x1="1100" y1="0" x2="1100" y2="630"/>
+
+    <line x1="0" y1="100" x2="1200" y2="100"/>
+    <line x1="0" y1="200" x2="1200" y2="200"/>
+    <line x1="0" y1="300" x2="1200" y2="300"/>
+    <line x1="0" y1="400" x2="1200" y2="400"/>
+    <line x1="0" y1="500" x2="1200" y2="500"/>
+    <line x1="0" y1="600" x2="1200" y2="600"/>
+  </g>
+
+  <!-- Outer Frame -->
+  <rect x="24" y="24" width="1152" height="582" rx="28" fill="none" stroke="url(#border-grad)" stroke-width="2"/>
+
+  <!-- 2. Circular Emblem on the Left (radius 180, center at 240, 315) -->
+  <g transform="translate(240, 315)">
+    <!-- Ambient Behind Logo -->
+    <circle cx="0" cy="0" r="186" fill="url(#emblem-bg)"/>
+    <circle cx="0" cy="0" r="182" fill="none" stroke="url(#emblem-gold)" stroke-width="4.5" stroke-opacity="0.9"/>
+    <circle cx="0" cy="0" r="174" fill="none" stroke="#38BDF8" stroke-width="1.8" stroke-dasharray="12 6" stroke-opacity="0.7"/>
+    <circle cx="0" cy="0" r="158" fill="none" stroke="#FFB800" stroke-width="1" stroke-opacity="0.4"/>
+
+    <!-- Cardinal Nodes -->
+    <circle cx="0" cy="-182" r="5" fill="#FFE082"/>
+    <circle cx="182" cy="0" r="5" fill="#00F2FE"/>
+    <circle cx="0" cy="182" r="5" fill="#FFE082"/>
+    <circle cx="-182" cy="0" r="5" fill="#00F2FE"/>
+
+    <!-- Emblem Hexagon & Core -->
+    <polygon points="0,-130 115,-65 115,65 0,130 -115,65 -115,-65" 
+             fill="#0A1324" fill-opacity="0.75"
+             stroke="url(#emblem-gold)" stroke-width="3" stroke-linejoin="round"/>
+
+    <!-- Wing Shapes (Scaled) -->
+    <path d="M 0 -95 L 82 -48 L 62 -36 L 0 -71 L -62 -36 L -82 -48 Z" fill="url(#emblem-gold)"/>
+    <path d="M -82 -36 L -16 2 L -36 14 L -82 -12 Z" fill="url(#emblem-gold)"/>
+    <path d="M 82 -36 L 82 -12 L 36 14 L 16 2 Z" fill="url(#emblem-cyan)"/>
+
+    <!-- Diamond Core -->
+    <polygon points="0,-32 32,0 0,32 -32,0" fill="url(#emblem-gold)"/>
+    <polygon points="0,-22 22,0 0,22 -22,0" fill="#0B1329"/>
+    <circle cx="0" cy="0" r="8" fill="#00F2FE"/>
+    <circle cx="0" cy="0" r="3.5" fill="#FFFFFF"/>
+
+    <!-- Legs -->
+    <path d="M -82 66 L -82 42 L -22 22 L -8 36 L -55 80 Z" fill="url(#emblem-cyan)"/>
+    <path d="M 82 66 L 55 80 L 8 36 L 22 22 L 82 42 Z" fill="url(#emblem-gold)"/>
+    <path d="M 0 115 L -62 80 L -46 68 L 0 94 L 46 68 L 62 80 Z" fill="url(#emblem-cyan)"/>
+  </g>
+
+  <!-- 3. Text & Brand Presentation on Right -->
+  <g transform="translate(480, 0)">
+    <!-- Top Ecosystem Verification Pill -->
+    <g transform="translate(0, 120)">
+      <rect x="0" y="0" width="370" height="38" rx="19" fill="#0F172A" stroke="#FFB800" stroke-opacity="0.4" stroke-width="1.5"/>
+      <circle cx="20" cy="19" r="6" fill="#10B981"/>
+      <text x="36" y="24" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="13" font-weight="700" fill="#E2E8F0" letter-spacing="0.5">
+        OFFICIAL FLYXCOIN ECOSYSTEM
+      </text>
+      <text x="310" y="24" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="12" font-weight="600" fill="#FFB800">
+        • VERIFIED
+      </text>
+    </g>
+
+    <!-- Primary Title: FLYX INSIGHT -->
+    <text x="0" y="235" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="64" font-weight="900" letter-spacing="1">
+      <tspan fill="url(#text-gold)">FLYX</tspan> <tspan fill="url(#text-cyan)">INSIGHT</tspan>
+    </text>
+
+    <!-- Subtitle -->
+    <text x="0" y="285" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="24" font-weight="700" fill="#F8FAFC">
+      Official FLYXCoin Mining &amp; Transparency Portal
+    </text>
+
+    <!-- Description Paragraph -->
+    <text x="0" y="340" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="17" font-weight="400" fill="#94A3B8" line-height="26">
+      <tspan x="0" dy="0">Real-time off-chain ledger explorer, verified tokenomics supply,</tspan>
+      <tspan x="0" dy="28">public wallet balances, audit records &amp; smart contract ecosystem.</tspan>
+    </text>
+
+    <!-- Feature Badges -->
+    <g transform="translate(0, 420)">
+      <!-- Badge 1: 1,000,000,000 Max Supply -->
+      <g transform="translate(0, 0)">
+        <rect x="0" y="0" width="180" height="48" rx="10" fill="#0D1527" stroke="#1E293B" stroke-width="1"/>
+        <text x="16" y="20" font-family="monospace" font-size="11" fill="#64748B">MAX SUPPLY</text>
+        <text x="16" y="38" font-family="monospace" font-size="15" font-weight="700" fill="#FFB800">1,000,000,000</text>
+      </g>
+
+      <!-- Badge 2: Pre-Mainnet EVM -->
+      <g transform="translate(196, 0)">
+        <rect x="0" y="0" width="200" height="48" rx="10" fill="#0D1527" stroke="#1E293B" stroke-width="1"/>
+        <text x="16" y="20" font-family="monospace" font-size="11" fill="#64748B">LEDGER ARCHITECTURE</text>
+        <text x="16" y="38" font-family="monospace" font-size="14" font-weight="700" fill="#38BDF8">Off-Chain MySQL + EVM</text>
+      </g>
+
+      <!-- Badge 3: Dual-Fiat Settlement -->
+      <g transform="translate(412, 0)">
+        <rect x="0" y="0" width="180" height="48" rx="10" fill="#0D1527" stroke="#1E293B" stroke-width="1"/>
+        <text x="16" y="20" font-family="monospace" font-size="11" fill="#64748B">SETTLEMENT RATE</text>
+        <text x="16" y="38" font-family="monospace" font-size="15" font-weight="700" fill="#10B981">$3.50 USD / FLYX</text>
+      </g>
+    </g>
+
+    <!-- Domain Footer -->
+    <g transform="translate(0, 520)">
+      <text x="0" y="0" font-family="monospace" font-size="16" font-weight="700" fill="#38BDF8">
+        https://flyxinsight.flyxcoin.com/
+      </text>
+      <text x="390" y="0" font-family="monospace" font-size="14" fill="#64748B">
+        • Official FlyXCoin.com Network
+      </text>
+    </g>
+  </g>
+</svg>

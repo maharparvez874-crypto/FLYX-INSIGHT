@@ -33,6 +33,7 @@ import {
   X,
 } from 'lucide-react';
 import { FlyxCoin3D } from './components/FlyxCoin3D.tsx';
+import { FlyxInsightLogo } from './components/FlyxInsightLogo.tsx';
 import { AdminConsoleModal } from './components/AdminConsoleModal.tsx';
 import { TransactionVolumeChart } from './components/TransactionVolumeChart.tsx';
 import { AuditSummaryWidget } from './components/AuditSummaryWidget.tsx';
@@ -1169,13 +1170,13 @@ export default function App() {
         }`}
       >
         <div className="max-w-[1380px] mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
-          {/* Zone 1: Single wordmark matching FlyXCoin.com Gold + Blue typography */}
+          {/* Zone 1: Official FLYX INSIGHT Dynamic Circular Logo & Wordmark */}
           <a
             href="#overview"
-            className="font-display text-lg sm:text-xl font-extrabold tracking-wide whitespace-nowrap shrink-0"
+            className="shrink-0 flex items-center group transition-opacity hover:opacity-95"
+            aria-label="FLYX INSIGHT Home"
           >
-            <span className="text-[#FFB800]">FLYX</span>{' '}
-            <span className="text-[#3B82F6]">INSIGHT</span>
+            <FlyxInsightLogo size="md" theme={theme} animated />
           </a>
 
           {/* Zone 2: Single-Line Navigation Links */}
@@ -4380,7 +4381,7 @@ export default function App() {
         <div className="max-w-[1380px] mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             <div className="md:col-span-2 space-y-3">
-              <div className="font-display text-lg font-bold text-[#D4AF37]">FLYX Insight</div>
+              <FlyxInsightLogo size="sm" theme={theme} animated={false} />
               <p className="text-xs text-[#9CA3AF] max-w-md leading-relaxed">
                 The official public information, tokenomics, off-chain ledger explorer, and future
                 blockchain architecture portal connected to{' '}

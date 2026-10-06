@@ -946,6 +946,8 @@ app.all('/api/*', (_req: Request, res: Response) => {
 // VITE DEV SERVER & STATIC FRONTEND MOUNTING
 // ============================================================================
 
+app.use(express.static(path.resolve(process.cwd(), 'public')));
+
 async function startServer() {
   if (process.env.NODE_ENV !== 'production') {
     const vite = await createViteServer({

@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>FLYX Insight — Official FLYX Tokenomics & Transparency Portal</title>
+    <title>FLYX INSIGHT — Official FLYXCoin Mining &amp; Transparency Portal</title>
     <meta
       name="description"
       content="Official public information, tokenomics, off-chain ledger explorer, wallet lookup, whitepaper, and future blockchain architecture portal for the FLYX ecosystem connected to FlyXCoin.com."
@@ -13,25 +13,42 @@
       content="FLYX Insight, FLYX token information, FLYX tokenomics, FLYX transparency, FLYX supply, FLYX ecosystem, FLYX transactions, FLYX whitepaper, FlyXCoin.com"
     />
     <meta name="robots" content="index, follow" />
-    <link rel="canonical" href="https://insight.flyxcoin.com/" />
+    <link rel="canonical" href="https://flyxinsight.flyxcoin.com/" />
 
-    <!-- Open Graph / Social Metadata -->
+    <!-- Favicon & Touch Icon Branding System -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <meta name="theme-color" content="#FFB800" />
+    <meta name="msapplication-TileColor" content="#090A0F" />
+
+    <!-- Open Graph / Social Sharing Cards -->
     <meta property="og:type" content="website" />
-    <meta property="og:site_name" content="FLYX Insight" />
-    <meta property="og:title" content="FLYX Insight — Official FLYX Tokenomics & Transparency Portal" />
+    <meta property="og:site_name" content="FLYX INSIGHT" />
+    <meta property="og:title" content="FLYX INSIGHT — Official FLYXCoin Mining &amp; Transparency Portal" />
     <meta
       property="og:description"
       content="Verify FLYX token supply, reserve allocations, off-chain project ledger transactions, public wallet balances, whitepaper, and roadmap connected to FlyXCoin.com."
     />
-    <meta property="og:url" content="https://insight.flyxcoin.com/" />
+    <meta property="og:url" content="https://flyxinsight.flyxcoin.com/" />
+    <meta property="og:image" content="https://flyxinsight.flyxcoin.com/logo-og.png" />
+    <meta property="og:image:secure_url" content="https://flyxinsight.flyxcoin.com/logo-og.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="FLYX INSIGHT Official Circular Emblem and Platform Preview" />
+    <meta property="og:image:type" content="image/png" />
 
     <!-- Twitter / X Card Metadata -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="FLYX Insight — Official FLYX Tokenomics & Transparency Portal" />
+    <meta name="twitter:title" content="FLYX INSIGHT — Official FLYXCoin Mining &amp; Transparency Portal" />
     <meta
       name="twitter:description"
       content="Official FLYX ecosystem transparency portal: live off-chain MySQL ledger, tokenomics allocations, public wallet lookup, whitepaper, and future blockchain architecture."
     />
+    <meta name="twitter:image" content="https://flyxinsight.flyxcoin.com/logo-og.png" />
+    <meta name="twitter:image:alt" content="FLYX INSIGHT Official Circular Emblem and Platform Preview" />
 
     <!-- Typography: Outfit (Modern Sans Display), Inter / Plus Jakarta Sans (Body), JetBrains Mono (Tabular Numerals) -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -41,27 +58,61 @@
       rel="stylesheet"
     />
 
-    <!-- Schema.org Structured Data (JSON-LD) -->
+    <!-- Google Search Branding: Schema.org Structured Data (JSON-LD) -->
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
-        "@type": "WebApplication",
-        "name": "FLYX Insight",
-        "alternateName": "FLYX Ecosystem Transparency & Tokenomics Portal",
-        "applicationCategory": "FinanceApplication",
-        "operatingSystem": "All",
-        "url": "https://insight.flyxcoin.com",
-        "isPartOf": {
-          "@type": "WebSite",
-          "name": "FlyXCoin.com Official Ecosystem",
-          "url": "https://flyxcoin.com"
-        },
-        "description": "Official public information, tokenomics, off-chain ledger explorer, wallet lookup, whitepaper, and future blockchain architecture portal for the FLYX ecosystem.",
-        "offers": {
-          "@type": "Offer",
-          "price": "0",
-          "priceCurrency": "USD"
-        }
+        "@graph": [
+          {
+            "@type": "Organization",
+            "@id": "https://flyxinsight.flyxcoin.com/#organization",
+            "name": "FLYX INSIGHT",
+            "alternateName": "FLYX Ecosystem Foundation",
+            "url": "https://flyxinsight.flyxcoin.com/",
+            "logo": {
+              "@type": "ImageObject",
+              "@id": "https://flyxinsight.flyxcoin.com/#logo",
+              "url": "https://flyxinsight.flyxcoin.com/logo.png",
+              "contentUrl": "https://flyxinsight.flyxcoin.com/logo.png",
+              "caption": "FLYX INSIGHT Official Circular Logo",
+              "width": 512,
+              "height": 512
+            },
+            "sameAs": [
+              "https://flyxcoin.com"
+            ]
+          },
+          {
+            "@type": "WebSite",
+            "@id": "https://flyxinsight.flyxcoin.com/#website",
+            "url": "https://flyxinsight.flyxcoin.com/",
+            "name": "FLYX INSIGHT",
+            "description": "Official FLYXCoin Mining & Transparency Portal",
+            "publisher": {
+              "@id": "https://flyxinsight.flyxcoin.com/#organization"
+            },
+            "isPartOf": {
+              "@type": "WebSite",
+              "name": "FlyXCoin.com Official Ecosystem",
+              "url": "https://flyxcoin.com"
+            }
+          },
+          {
+            "@type": "WebApplication",
+            "@id": "https://flyxinsight.flyxcoin.com/#app",
+            "name": "FLYX INSIGHT",
+            "alternateName": "FLYX Ecosystem Transparency & Tokenomics Portal",
+            "applicationCategory": "FinanceApplication",
+            "operatingSystem": "All",
+            "url": "https://flyxinsight.flyxcoin.com/",
+            "description": "Official public information, tokenomics, off-chain ledger explorer, wallet lookup, whitepaper, and future blockchain architecture portal for the FLYX ecosystem.",
+            "offers": {
+              "@type": "Offer",
+              "price": "0",
+              "priceCurrency": "USD"
+            }
+          }
+        ]
       }
     </script>
   </head>

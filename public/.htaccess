@@ -1,6 +1,7 @@
 # ============================================================================
 # FLYX INSIGHT PRODUCTION APACHE CONFIGURATION (.htaccess)
-# Domain: https://flyxinsight.flyxcoin.com
+# Domain: https://flyxinsight.flyxcoin.com (Hostinger Production Deployment)
+# Backend: PHP + MySQL Native API Architecture
 # ============================================================================
 
 <IfModule mod_headers.c>
@@ -14,28 +15,19 @@ RewriteEngine On
 RewriteCond %{REQUEST_METHOD} OPTIONS
 RewriteRule ^(.*)$ $1 [R=204,L]
 
-# 1. Reverse Proxy to Node.js / Express on port 3000 if mod_proxy is enabled
-<IfModule mod_proxy.c>
-    <IfModule mod_proxy_http.c>
-        RewriteCond %{HTTP_HOST} ^(flyxinsight\.flyxcoin\.com|localhost|127\.0\.0\.1) [NC]
-        RewriteRule ^api/(.*)$ http://127.0.0.1:3000/api/$1 [P,L]
-    </IfModule>
-</IfModule>
+# 1. Native PHP API Routing for Hostinger
+# Direct /api/overview, /api/price, and dynamic /api endpoints to PHP handlers
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteRule ^api/overview/?$ api/overview.php [QSA,L]
 
-# 2. Native PHP API Routing Fallback for LAMP / Hostinger Shared Hosting
-# Directs /api/overview and /api/price to PHP handlers if Node proxy is not running
-RewriteCond %{REQUEST_URI} ^/api/overview/?$ [NC]
-RewriteRule ^api/overview/?$ api/overview.php [L]
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteRule ^api/price/?$ api/price.php [QSA,L]
 
-RewriteCond %{REQUEST_URI} ^/api/price/?$ [NC]
-RewriteRule ^api/price/?$ api/price.php [L]
-
-RewriteCond %{REQUEST_URI} ^/api/(.*)$ [NC]
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteRule ^api/(.*)$ api/index.php?endpoint=$1 [QSA,L]
 
-# 3. Single Page Application (SPA) Client Routing
-# Redirects all non-existent files and directories to index.html
+# 2. Single Page Application (SPA) Client Routing
+# Direct all non-existent frontend paths to index.html
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule ^ index.html [L]

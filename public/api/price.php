@@ -2,12 +2,15 @@
 // ============================================================================
 // FLYX INSIGHT PRODUCTION API — PRICE ENDPOINT
 // Endpoint: GET /api/price
+// Hostinger PHP + MySQL Production Architecture
 // ============================================================================
 
-header("Access-Control-Allow-Origin: *");
-header("Access-Control-Allow-Methods: GET, OPTIONS");
-header("Access-Control-Allow-Headers: Content-Type, Authorization, x-csrf-token, X-Requested-With, Accept, Origin");
-header("Content-Type: application/json; charset=UTF-8");
+declare(strict_types=1);
+
+header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Methods: GET, OPTIONS');
+header('Access-Control-Allow-Headers: Content-Type, Authorization, x-csrf-token, X-Requested-With, Accept, Origin');
+header('Content-Type: application/json; charset=UTF-8');
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(204);
@@ -17,28 +20,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
     http_response_code(405);
     echo json_encode([
-        "success" => false,
-        "error" => "Method not allowed. Use GET."
-    ], JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
+        'success' => false,
+        'error'   => 'Method not allowed. Use GET.',
+    ], JSON_UNESCAPED_SLASHES);
     exit;
 }
 
-$pricePayload = [
-    "symbol" => "FLYX",
-    "currency" => "USD",
-    "price_usd" => "3.50000000",
-    "change_24h_percent" => "+4.28",
-    "high_24h_usd" => "3.54000000",
-    "low_24h_usd" => "3.35000000",
-    "reference_volume_24h_flyx" => "59950.75000000",
-    "source_portal" => "FlyXCoin.com Internal Dual-Fiat Wallet Settlement Feed",
-    "rate_type" => "OFF_CHAIN_INTERNAL_SETTLEMENT_RATE",
-    "updated_at" => gmdate("Y-m-d\TH:i:s\Z")
-];
+try {
+    require_once __DIR__ . '/db.php';
+    $data = getFlyxPriceData();
 
-http_response_code(200);
-echo json_encode(array_merge([
-    "success" => true,
-    "data" => $pricePayload
-], $pricePayload), JSON_UNESCAPED_SLASHES);
-exit;
+    http_response_code(200);
+    echo json_encode(array_merge([
+        'success' => true,
+        'data'    => $data,
+    ], $data), JSON_UNESCAPED_SLASHES);
+    exit;
+} catch (Throwable $e) {
+    error_log('FlyX API /price error: ' . $e->getMessage());
+    http_response_code(500);
+    echo json_encode([
+        'success' => false,
+        'error'   => 'Failed to retrieve FLYX token price.',
+    ], JSON_UNESCAPED_SLASHES);
+    exit;
+}
