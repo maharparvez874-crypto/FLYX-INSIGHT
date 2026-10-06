@@ -52,10 +52,60 @@ if ($endpoint === 'transactions' || $endpoint === 'v1/transactions') {
     exit;
 }
 
-// Route: Wallets
+// Route: Single Wallet Lookup (/api/wallets/:identifier or /api/wallets?identifier=...)
+if (preg_match('#^wallets/(.+)$#', $endpoint, $walletMatches)) {
+    header('Content-Type: application/json; charset=UTF-8');
+    require_once __DIR__ . '/db.php';
+    $identifier = urldecode($walletMatches[1]);
+    $result = getFlyxWalletByIdentifier($identifier);
+
+    if ($result && !empty($result['wallet'])) {
+        http_response_code(200);
+        echo json_encode([
+            'success'      => true,
+            'wallet'       => $result['wallet'],
+            'transactions' => $result['transactions'] ?? [],
+        ], JSON_UNESCAPED_SLASHES);
+        exit;
+    }
+
+    http_response_code(404);
+    echo json_encode([
+        'success' => false,
+        'error'   => 'WALLET_NOT_FOUND',
+        'message' => 'Wallet not found',
+    ], JSON_UNESCAPED_SLASHES);
+    exit;
+}
+
+// Route: Wallets List (/api/wallets)
 if ($endpoint === 'wallets' || $endpoint === 'v1/wallets') {
     header('Content-Type: application/json; charset=UTF-8');
     require_once __DIR__ . '/db.php';
+
+    // Check if query parameter identifier/user_id is passed
+    $identifier = $_GET['identifier'] ?? $_GET['user_id'] ?? $_GET['userId'] ?? null;
+    if ($identifier) {
+        $result = getFlyxWalletByIdentifier(trim($identifier));
+        if ($result && !empty($result['wallet'])) {
+            http_response_code(200);
+            echo json_encode([
+                'success'      => true,
+                'wallet'       => $result['wallet'],
+                'transactions' => $result['transactions'] ?? [],
+            ], JSON_UNESCAPED_SLASHES);
+            exit;
+        }
+
+        http_response_code(404);
+        echo json_encode([
+            'success' => false,
+            'error'   => 'WALLET_NOT_FOUND',
+            'message' => 'Wallet not found',
+        ], JSON_UNESCAPED_SLASHES);
+        exit;
+    }
+
     $overview = getFlyxOverviewData();
     $wallets = $overview['publicWallets'] ?? [];
     http_response_code(200);
@@ -118,6 +168,7 @@ header('Content-Type: application/json; charset=UTF-8');
 http_response_code(404);
 echo json_encode([
     'success' => false,
-    'error'   => 'API endpoint not found: /api/' . $endpoint,
+    'error'   => 'API_ENDPOINT_NOT_FOUND',
+    'message' => 'API endpoint not found: /api/' . $endpoint,
 ], JSON_UNESCAPED_SLASHES);
 exit;

@@ -15,6 +15,28 @@
     <meta name="robots" content="index, follow" />
     <link rel="canonical" href="https://flyxinsight.flyxcoin.com/" />
 
+    <!-- Web3 Browser Extension Safe Guard (suppresses external evmAsk.js duplicate window.ethereum definition collision) -->
+    <script>
+      (function () {
+        window.addEventListener(
+          'error',
+          function (e) {
+            if (
+              e &&
+              e.message &&
+              (e.message.indexOf('Cannot redefine property: ethereum') !== -1 ||
+                e.message.indexOf('evmAsk') !== -1)
+            ) {
+              e.preventDefault();
+              e.stopImmediatePropagation();
+              return true;
+            }
+          },
+          true
+        );
+      })();
+    </script>
+
     <!-- Favicon & Touch Icon Branding System -->
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />

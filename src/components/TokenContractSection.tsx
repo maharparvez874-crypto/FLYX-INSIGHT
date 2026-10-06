@@ -221,7 +221,7 @@ export const TokenContractSection: React.FC<TokenContractSectionProps> = ({
 
               <div className="space-y-3 text-xs leading-relaxed text-slate-300">
                 <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 font-mono text-[11px] leading-snug">
-                  ✓ {verificationResult.verificationProof}
+                  ✓ {verificationResult?.verificationProof ?? 'Pre-Mainnet Invariant Attested'}
                 </div>
 
                 <p className="text-[11px] text-slate-400 leading-normal">

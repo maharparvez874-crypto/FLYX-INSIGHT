@@ -252,28 +252,51 @@ app.get('/api/wallets/:identifier', rateLimiter(60, 60_000), (req: Request, res:
   try {
     const identifier = String(req.params.identifier || '').trim();
     if (!identifier || identifier.length > 128) {
-      return res.status(400).json({ error: 'Invalid wallet or account identifier.' });
+      return res.status(400).json({
+        success: false,
+        error: 'INVALID_IDENTIFIER',
+        message: 'Invalid wallet or account identifier.',
+      });
     }
 
     const result = ledgerRepository.lookupPublicWallet(identifier);
     if (!result) {
       return res.status(404).json({
-        error: `No public wallet or custodial vault found matching identifier "${sanitizeText(
+        success: false,
+        error: 'WALLET_NOT_FOUND',
+        message: `No public wallet or custodial vault found matching identifier "${sanitizeText(
           identifier,
           64
         )}".`,
       });
     }
 
+    const walletData = {
+      ...result.wallet,
+      verificationProof:
+        (result.wallet as any).verificationProof ??
+        (result.wallet as any).verification_proof ??
+        null,
+      verification_proof:
+        (result.wallet as any).verificationProof ??
+        (result.wallet as any).verification_proof ??
+        null,
+    };
+
     res.json({
+      success: true,
       privacyNotice:
         'Public Wallet Lookup exposes only intentionally public ledger state. Passwords, private keys, authentication tokens, and personal user information are strictly isolated and never transmitted.',
-      wallet: result.wallet,
+      wallet: walletData,
       transactions: result.transactions,
     });
   } catch (err) {
     console.error('Error in GET /api/wallets/:identifier:', err);
-    res.status(500).json({ error: 'Failed to lookup public wallet record.' });
+    res.status(500).json({
+      success: false,
+      error: 'SERVER_ERROR',
+      message: 'Failed to lookup public wallet record.',
+    });
   }
 });
 

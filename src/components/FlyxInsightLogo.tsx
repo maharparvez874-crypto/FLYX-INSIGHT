@@ -59,42 +59,42 @@ export const FlyxInsightLogo: React.FC<FlyxInsightLogoProps> = ({
           <defs>
             {/* Master Disc Background */}
             <radialGradient id="flyx-emblem-bg" cx="50%" cy="36%" r="64%">
-              <stop offset="0%" stop-color={isDark ? '#16233F' : '#1E293B'} />
-              <stop offset="45%" stop-color={isDark ? '#0D1629' : '#0F172A'} />
-              <stop offset="85%" stop-color={isDark ? '#070C18' : '#020617'} />
-              <stop offset="100%" stop-color="#03060C" />
+              <stop offset="0%" stopColor={isDark ? '#16233F' : '#1E293B'} />
+              <stop offset="45%" stopColor={isDark ? '#0D1629' : '#0F172A'} />
+              <stop offset="85%" stopColor={isDark ? '#070C18' : '#020617'} />
+              <stop offset="100%" stopColor="#03060C" />
             </radialGradient>
 
             {/* Imperial Gold Ring */}
             <linearGradient id="flyx-gold-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stop-color="#FFF2B2" />
-              <stop offset="25%" stop-color="#FFC727" />
-              <stop offset="55%" stop-color="#E5A100" />
-              <stop offset="85%" stop-color="#B87333" />
-              <stop offset="100%" stop-color="#FFD54F" />
+              <stop offset="0%" stopColor="#FFF2B2" />
+              <stop offset="25%" stopColor="#FFC727" />
+              <stop offset="55%" stopColor="#E5A100" />
+              <stop offset="85%" stopColor="#B87333" />
+              <stop offset="100%" stopColor="#FFD54F" />
             </linearGradient>
 
             {/* Electric Cyan Neon */}
             <linearGradient id="flyx-cyan-grad" x1="0%" y1="100%" x2="100%" y2="0%">
-              <stop offset="0%" stop-color="#00F2FE" />
-              <stop offset="45%" stop-color="#38BDF8" />
-              <stop offset="85%" stop-color="#2563EB" />
-              <stop offset="100%" stop-color="#1D4ED8" />
+              <stop offset="0%" stopColor="#00F2FE" />
+              <stop offset="45%" stopColor="#38BDF8" />
+              <stop offset="85%" stopColor="#2563EB" />
+              <stop offset="100%" stopColor="#1D4ED8" />
             </linearGradient>
 
             {/* Wing Gold Highlight */}
             <linearGradient id="flyx-wing-gold" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stop-color="#FFFBEB" />
-              <stop offset="25%" stop-color="#FBBF24" />
-              <stop offset="65%" stop-color="#D97706" />
-              <stop offset="100%" stop-color="#92400E" />
+              <stop offset="0%" stopColor="#FFFBEB" />
+              <stop offset="25%" stopColor="#FBBF24" />
+              <stop offset="65%" stopColor="#D97706" />
+              <stop offset="100%" stopColor="#92400E" />
             </linearGradient>
 
             {/* Glass Specular Dome */}
             <linearGradient id="flyx-specular" x1="25%" y1="0%" x2="75%" y2="100%">
-              <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.32" />
-              <stop offset="35%" stop-color="#FFFFFF" stop-opacity="0.06" />
-              <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0" />
+              <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.32" />
+              <stop offset="35%" stopColor="#FFFFFF" stopOpacity="0.06" />
+              <stop offset="100%" stopColor="#FFFFFF" stopOpacity="0" />
             </linearGradient>
 
             {/* Core Glow Filter */}

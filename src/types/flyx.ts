@@ -99,6 +99,8 @@ export interface PublicWalletRecord {
   transaction_count: number;
   account_status: AccountStatus;
   is_public: boolean;
+  verificationProof?: string | null;
+  verification_proof?: string | null;
   created_at: string;
   last_activity_at: string;
 }
