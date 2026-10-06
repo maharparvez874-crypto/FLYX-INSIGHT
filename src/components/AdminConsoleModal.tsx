@@ -176,8 +176,37 @@ export const AdminConsoleModal: React.FC<AdminConsoleModalProps> = ({
     }
   }, [selectedWp]);
 
+  const fetchUserContracts = async (
+    query = contractSearchQuery,
+    status = contractStatusFilter,
+    network = contractNetworkFilter
+  ) => {
+    if (!session) return;
+    setContractLoading(true);
+    try {
+      const params = new URLSearchParams();
+      if (query) params.append('q', query);
+      if (status !== 'ALL') params.append('status', status);
+      if (network !== 'ALL') params.append('network', network);
+
+      const res = await fetch(`/api/admin/user-contracts?${params.toString()}`, {
+        headers: {
+          Authorization: `Bearer ${session.sessionToken}`,
+        },
+      });
+      const data = await res.json();
+      if (res.ok && Array.isArray(data.contracts)) {
+        setUserContractsList(data.contracts);
+      }
+    } catch {
+      // Keep existing list on transient failure
+    } finally {
+      setContractLoading(false);
+    }
+  };
+
   useEffect(() => {
-    if (session && activeTab === 'transactions') {
+    if (isOpen && session && activeTab === 'transactions') {
       fetch('/api/admin/transactions', {
         headers: { Authorization: `Bearer ${session.sessionToken}` },
       })
@@ -187,9 +216,13 @@ export const AdminConsoleModal: React.FC<AdminConsoleModalProps> = ({
         })
         .catch(() => {});
     }
-  }, [session, activeTab, overview]);
+  }, [isOpen, session, activeTab, overview]);
 
-  if (!isOpen) return null;
+  useEffect(() => {
+    if (isOpen && session && activeTab === 'user-contracts') {
+      fetchUserContracts();
+    }
+  }, [isOpen, session, activeTab, contractStatusFilter, contractNetworkFilter]);
 
   const isDark = theme === 'dark';
 
@@ -457,41 +490,6 @@ export const AdminConsoleModal: React.FC<AdminConsoleModalProps> = ({
 
   // --- USER SMART CONTRACTS HANDLERS ---
 
-  const fetchUserContracts = async (
-    query = contractSearchQuery,
-    status = contractStatusFilter,
-    network = contractNetworkFilter
-  ) => {
-    if (!session) return;
-    setContractLoading(true);
-    try {
-      const params = new URLSearchParams();
-      if (query) params.append('q', query);
-      if (status !== 'ALL') params.append('status', status);
-      if (network !== 'ALL') params.append('network', network);
-
-      const res = await fetch(`/api/admin/user-contracts?${params.toString()}`, {
-        headers: {
-          Authorization: `Bearer ${session.sessionToken}`,
-        },
-      });
-      const data = await res.json();
-      if (res.ok && Array.isArray(data.contracts)) {
-        setUserContractsList(data.contracts);
-      }
-    } catch {
-      // Keep existing list on transient failure
-    } finally {
-      setContractLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    if (session && activeTab === 'user-contracts') {
-      fetchUserContracts();
-    }
-  }, [session, activeTab, contractStatusFilter, contractNetworkFilter]);
-
   const handleSearchContractsSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     fetchUserContracts(contractSearchQuery, contractStatusFilter, contractNetworkFilter);
@@ -592,6 +590,8 @@ export const AdminConsoleModal: React.FC<AdminConsoleModalProps> = ({
       setCopiedContractId((prev) => (prev === id ? null : prev));
     }, 2000);
   };
+
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md">
