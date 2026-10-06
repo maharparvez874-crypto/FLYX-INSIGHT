@@ -1,0 +1,8 @@
+{
+  "name": "Flyxcoin info",
+  "description": "Official public information, tokenomics, off-chain ledger explorer, wallet lookup, whitepaper, and future blockchain architecture portal for the FLYX ecosystem connected to FlyXCoin.com.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
