@@ -13,6 +13,7 @@ import {
   isValidDecimal8,
   unitsToDecimal,
 } from '../services/blockchainAdapter.ts';
+import { getPrice } from '../services/apiClient.ts';
 
 export interface LivePriceData {
   symbol: string;
@@ -56,11 +57,8 @@ export const LivePricePanel: React.FC<LivePricePanelProps> = ({
   const fetchLivePrice = async () => {
     setFetching(true);
     try {
-      const res = await fetch('/api/price');
-      if (res.ok) {
-        const data: LivePriceData = await res.json();
-        setPriceData(data);
-      }
+      const data = await getPrice();
+      setPriceData(data);
     } catch {
       // Keep last known rate on transient error
     } finally {
@@ -69,9 +67,21 @@ export const LivePricePanel: React.FC<LivePricePanelProps> = ({
   };
 
   useEffect(() => {
-    fetchLivePrice();
-    const timer = window.setInterval(fetchLivePrice, 15000);
-    return () => window.clearInterval(timer);
+    let isMounted = true;
+    const loadPrice = async () => {
+      try {
+        const data = await getPrice();
+        if (isMounted) setPriceData(data);
+      } catch {
+        // preserve
+      }
+    };
+    loadPrice();
+    const timer = window.setInterval(loadPrice, 15000);
+    return () => {
+      isMounted = false;
+      window.clearInterval(timer);
+    };
   }, []);
 
   const isPositiveChange = !priceData.change_24h_percent.trim().startsWith('-');

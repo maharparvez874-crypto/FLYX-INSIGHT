@@ -25,6 +25,20 @@ app.use((_req: Request, res: Response, next: NextFunction) => {
   next();
 });
 
+// Production Cross-Origin Resource Sharing (CORS) Middleware
+app.use((req: Request, res: Response, next: NextFunction) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
+  res.setHeader(
+    'Access-Control-Allow-Headers',
+    'Content-Type, Authorization, x-csrf-token, X-Requested-With, Accept, Origin'
+  );
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(204);
+  }
+  next();
+});
+
 // Simple HTML Output Escaping to prevent XSS in stored text fields
 function sanitizeText(input: unknown, maxLength = 2000): string {
   if (typeof input !== 'string') return '';
@@ -164,15 +178,27 @@ app.get('/sitemap.xml', (_req: Request, res: Response) => {
 // PUBLIC TRANSPARENCY & LEDGER API ROUTES
 // ============================================================================
 
-app.get('/api/overview', rateLimiter(120, 60_000), (_req: Request, res: Response) => {
+const handleGetOverview = (_req: Request, res: Response) => {
   try {
     const data = ledgerRepository.getOverviewData();
-    res.json(data);
-  } catch (err) {
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    res.status(200).json({
+      success: true,
+      data,
+      ...data,
+    });
+  } catch (err: any) {
     console.error('Error in GET /api/overview:', err);
-    res.status(500).json({ error: 'Failed to retrieve FLYX ecosystem overview.' });
+    res.status(500).json({
+      success: false,
+      error: 'Failed to retrieve FLYX ecosystem overview.',
+    });
   }
-});
+};
+
+app.get('/api/overview', rateLimiter(120, 60_000), handleGetOverview);
+app.get('/api/v1/overview', rateLimiter(120, 60_000), handleGetOverview);
+app.get('/overview', rateLimiter(120, 60_000), handleGetOverview);
 
 app.get('/api/transactions', rateLimiter(90, 60_000), (req: Request, res: Response) => {
   try {
@@ -500,63 +526,88 @@ app.get('/api/insight/health', rateLimiter(60, 60_000), (_req: Request, res: Res
   }
 });
 
-app.get('/api/price', rateLimiter(120, 60_000), async (_req: Request, res: Response) => {
-  const apiEndpoint = process.env.FLYXCOIN_API_ENDPOINT;
-  const apiKey = process.env.FLYXCOIN_INTERNAL_API_KEY;
+const handleGetPrice = async (_req: Request, res: Response) => {
+  try {
+    const apiEndpoint = process.env.FLYXCOIN_API_ENDPOINT;
+    const apiKey = process.env.FLYXCOIN_INTERNAL_API_KEY;
 
-  // Attempt live upstream fetch from FlyXCoin.com API bridge if configured with a real key
-  if (apiEndpoint && apiKey && apiKey !== 'YOUR_FLYXCOIN_HMAC_API_KEY') {
-    try {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 2500);
-      const upstreamRes = await fetch(`${apiEndpoint.replace(/\/$/, '')}/price`, {
-        headers: {
-          Accept: 'application/json',
-          Authorization: `Bearer ${apiKey}`,
-        },
-        signal: controller.signal,
-      });
-      clearTimeout(timeout);
+    // Attempt live upstream fetch from FlyXCoin.com API bridge if configured with a real key
+    if (apiEndpoint && apiKey && apiKey !== 'YOUR_FLYXCOIN_HMAC_API_KEY') {
+      try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 2500);
+        const upstreamRes = await fetch(`${apiEndpoint.replace(/\/$/, '')}/price`, {
+          headers: {
+            Accept: 'application/json',
+            Authorization: `Bearer ${apiKey}`,
+          },
+          signal: controller.signal,
+        });
+        clearTimeout(timeout);
 
-      if (upstreamRes.ok) {
-        const upstreamData = (await upstreamRes.json()) as Record<string, unknown>;
-        if (typeof upstreamData.price_usd === 'string') {
-          return res.json({
-            symbol: 'FLYX',
-            currency: 'USD',
-            price_usd: upstreamData.price_usd,
-            change_24h_percent: String(upstreamData.change_24h_percent || '+4.28'),
-            high_24h_usd: String(upstreamData.high_24h_usd || '3.54000000'),
-            low_24h_usd: String(upstreamData.low_24h_usd || '3.35000000'),
-            reference_volume_24h_flyx: String(
-              upstreamData.reference_volume_24h_flyx || '59950.75000000'
-            ),
-            source_portal: 'FlyXCoin.com Official API Bridge (Live Upstream)',
-            rate_type: 'OFF_CHAIN_INTERNAL_SETTLEMENT_RATE',
-            updated_at: new Date().toISOString(),
-          });
+        if (upstreamRes.ok) {
+          const upstreamData = (await upstreamRes.json()) as Record<string, unknown>;
+          if (typeof upstreamData.price_usd === 'string') {
+            const payload = {
+              symbol: 'FLYX',
+              currency: 'USD',
+              price_usd: upstreamData.price_usd,
+              change_24h_percent: String(upstreamData.change_24h_percent || '+4.28'),
+              high_24h_usd: String(upstreamData.high_24h_usd || '3.54000000'),
+              low_24h_usd: String(upstreamData.low_24h_usd || '3.35000000'),
+              reference_volume_24h_flyx: String(
+                upstreamData.reference_volume_24h_flyx || '59950.75000000'
+              ),
+              source_portal: 'FlyXCoin.com Official API Bridge (Live Upstream)',
+              rate_type: 'OFF_CHAIN_INTERNAL_SETTLEMENT_RATE',
+              updated_at: new Date().toISOString(),
+            };
+            res.setHeader('Content-Type', 'application/json; charset=utf-8');
+            return res.status(200).json({
+              success: true,
+              data: payload,
+              ...payload,
+            });
+          }
         }
+      } catch {
+        // Fallback to synchronized internal ledger reference rate below
       }
-    } catch {
-      // Fallback to synchronized internal ledger reference rate below
     }
-  }
 
-  // Synchronized FlyXCoin.com Internal Ecosystem Settlement Rate ($3.50 USD / FLYX as in FlyXCoin.com wallet settlement)
-  const overview = ledgerRepository.getOverviewData();
-  return res.json({
-    symbol: overview.tokenInfo.token_symbol,
-    currency: 'USD',
-    price_usd: '3.50000000',
-    change_24h_percent: '+4.28',
-    high_24h_usd: '3.54000000',
-    low_24h_usd: '3.35000000',
-    reference_volume_24h_flyx: '59950.75000000',
-    source_portal: 'FlyXCoin.com Internal Dual-Fiat Wallet Settlement Feed',
-    rate_type: 'OFF_CHAIN_INTERNAL_SETTLEMENT_RATE',
-    updated_at: new Date().toISOString(),
-  });
-});
+    // Synchronized FlyXCoin.com Internal Ecosystem Settlement Rate ($3.50 USD / FLYX as in FlyXCoin.com wallet settlement)
+    const overview = ledgerRepository.getOverviewData();
+    const fallbackPayload = {
+      symbol: overview.tokenInfo.token_symbol,
+      currency: 'USD',
+      price_usd: '3.50000000',
+      change_24h_percent: '+4.28',
+      high_24h_usd: '3.54000000',
+      low_24h_usd: '3.35000000',
+      reference_volume_24h_flyx: '59950.75000000',
+      source_portal: 'FlyXCoin.com Internal Dual-Fiat Wallet Settlement Feed',
+      rate_type: 'OFF_CHAIN_INTERNAL_SETTLEMENT_RATE',
+      updated_at: new Date().toISOString(),
+    };
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    return res.status(200).json({
+      success: true,
+      data: fallbackPayload,
+      ...fallbackPayload,
+    });
+  } catch (err: any) {
+    console.error('Error in GET /api/price:', err);
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to retrieve FLYX token price.',
+    });
+  }
+};
+
+app.get('/api/price', rateLimiter(120, 60_000), handleGetPrice);
+app.get('/api/v1/price', rateLimiter(120, 60_000), handleGetPrice);
+app.get('/price', rateLimiter(120, 60_000), handleGetPrice);
+app.get('/api/rates/flyx-usd', rateLimiter(120, 60_000), handleGetPrice);
 
 // ============================================================================
 // ADMIN AUTHENTICATION & ROLE-PROTECTED MANAGEMENT ROUTES
@@ -882,6 +933,14 @@ app.patch(
     }
   }
 );
+
+// Fallback JSON 404 for any unregistered /api/* route (prevents returning HTML)
+app.all('/api/*', (_req: Request, res: Response) => {
+  res.status(404).json({
+    success: false,
+    error: 'API endpoint not found on FLYX Insight server.',
+  });
+});
 
 // ============================================================================
 // VITE DEV SERVER & STATIC FRONTEND MOUNTING

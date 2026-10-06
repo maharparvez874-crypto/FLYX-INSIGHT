@@ -52,6 +52,7 @@ import {
   formatFlyxAmount,
   unitsToDecimal,
 } from './services/blockchainAdapter.ts';
+import { getOverview, getPrice } from './services/apiClient.ts';
 
 type SortField = 'created_at' | 'amount' | 'tx_type';
 type SortDirection = 'asc' | 'desc';
@@ -436,11 +437,11 @@ export default function App() {
 
   // Live price polling for Dynamic Web3 KPI Section
   useEffect(() => {
+    let isMounted = true;
     const fetchLivePriceData = async () => {
       try {
-        const res = await fetch('/api/price');
-        if (res.ok) {
-          const data = await res.json();
+        const data = await getPrice();
+        if (isMounted) {
           if (data.price_usd) setLivePriceUsd(data.price_usd);
           if (data.change_24h_percent) setLivePriceChange(data.change_24h_percent);
         }
@@ -450,7 +451,10 @@ export default function App() {
     };
     fetchLivePriceData();
     const timer = setInterval(fetchLivePriceData, 25_000);
-    return () => clearInterval(timer);
+    return () => {
+      isMounted = false;
+      clearInterval(timer);
+    };
   }, []);
 
   // Public Wallet Lookup & History Sort States
@@ -594,51 +598,49 @@ export default function App() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [
-    selectedTransaction,
-    csvSettingsModalOpen,
-    schemaModalOpen,
-    shortcutsModalOpen,
-    adminOpen,
-    mobileMenuOpen,
-  ]);
+  }, []);
 
   // Initial Load of Overview & Default Wallet Lookup
   useEffect(() => {
+    let isMounted = true;
     const fetchInitial = async () => {
       setLoading(true);
       try {
         const t0 = performance.now();
-        const res = await fetch('/api/overview');
-        if (!res.ok) throw new Error('Failed to load FLYX Insight ledger data.');
-        const data: OverviewResponse = await res.json();
-        const rtt = Math.max(2, Math.round(performance.now() - t0));
-        setLedgerLatencyMs(rtt);
-        setOverview(data);
-        setFilteredTransactions(data.recentTransactions);
-        setLastSyncTime(new Date().toISOString().slice(11, 19));
-        await performWalletLookup('USR-FLYX-8849');
+        const data = await getOverview();
+        if (isMounted) {
+          const rtt = Math.max(2, Math.round(performance.now() - t0));
+          setLedgerLatencyMs(rtt);
+          setOverview(data);
+          setFilteredTransactions(data.recentTransactions);
+          setLastSyncTime(new Date().toISOString().slice(11, 19));
+          await performWalletLookup('USR-FLYX-8849');
+        }
       } catch (err: any) {
-        setError(err.message || 'Unable to connect to FLYX Insight API.');
+        if (isMounted) {
+          setError(err.message || 'Unable to connect to FLYX Insight API.');
+        }
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
     fetchInitial();
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const triggerLedgerHeartbeat = async () => {
     setIsSyncPulsing(true);
     try {
       const t0 = performance.now();
-      const res = await fetch('/api/overview');
-      if (res.ok) {
-        const data: OverviewResponse = await res.json();
-        const rtt = Math.max(2, Math.round(performance.now() - t0));
-        setLedgerLatencyMs(rtt);
-        setOverview(data);
-        setLastSyncTime(new Date().toISOString().slice(11, 19));
-      }
+      const data = await getOverview();
+      const rtt = Math.max(2, Math.round(performance.now() - t0));
+      setLedgerLatencyMs(rtt);
+      setOverview(data);
+      setLastSyncTime(new Date().toISOString().slice(11, 19));
     } catch {
       // Keep existing state on transient network hiccup
     } finally {
