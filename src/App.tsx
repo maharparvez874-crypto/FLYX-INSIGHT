@@ -53,7 +53,7 @@ import {
   formatFlyxAmount,
   unitsToDecimal,
 } from './services/blockchainAdapter.ts';
-import { getOverview, getPrice } from './services/apiClient.ts';
+import { buildApiUrl, getOverview, getPrice } from './services/apiClient.ts';
 import { INITIAL_OVERVIEW_DATA } from './data/initialOverview.ts';
 
 type SortField = 'created_at' | 'amount' | 'tx_type';
@@ -750,63 +750,155 @@ export default function App() {
 
   // Public & Authenticated Wallet Lookup Handler
   const performWalletLookup = async (identifier: string) => {
-    const clean = identifier.trim();
-    if (!clean) return;
+    const rawClean = identifier.trim();
+    if (!rawClean) return;
+
+    // Normalize identifier: strip any redundant endpoint prefix if user pasted a full path
+    const clean = rawClean.replace(/^\/?api\/(v1\/)?wallets\//i, '').trim();
     setWalletSearchInput(clean);
     setWalletLoading(true);
     setWalletError(null);
+
+    // Resolve authentication session token from sessionStorage or localStorage
+    let tokenSource: string | null = null;
+    let token: string | null = null;
+    let storedUsername: string | null = null;
+
     try {
-      // Resolve authentication session token if present
-      const token =
-        typeof sessionStorage !== 'undefined'
-          ? sessionStorage.getItem('flyx_session_token') ||
-            (() => {
-              try {
-                const raw = sessionStorage.getItem('flyx_admin_session');
-                return raw ? JSON.parse(raw)?.sessionToken : null;
-              } catch {
-                return null;
-              }
-            })()
-          : typeof localStorage !== 'undefined'
-          ? localStorage.getItem('flyx_session_token')
-          : null;
-
-      const headers: Record<string, string> = {
-        Accept: 'application/json',
-      };
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
+      if (typeof sessionStorage !== 'undefined') {
+        const direct = sessionStorage.getItem('flyx_session_token');
+        if (direct) {
+          token = direct;
+          tokenSource = 'sessionStorage.flyx_session_token';
+        } else {
+          const rawAdmin = sessionStorage.getItem('flyx_admin_session');
+          if (rawAdmin) {
+            const parsed = JSON.parse(rawAdmin);
+            if (parsed?.sessionToken) {
+              token = parsed.sessionToken;
+              storedUsername = parsed?.username || null;
+              tokenSource = 'sessionStorage.flyx_admin_session';
+            }
+          }
+        }
       }
+      if (!token && typeof localStorage !== 'undefined') {
+        const direct = localStorage.getItem('flyx_session_token');
+        if (direct) {
+          token = direct;
+          tokenSource = 'localStorage.flyx_session_token';
+        } else {
+          const rawAdmin = localStorage.getItem('flyx_admin_session');
+          if (rawAdmin) {
+            const parsed = JSON.parse(rawAdmin);
+            if (parsed?.sessionToken) {
+              token = parsed.sessionToken;
+              storedUsername = parsed?.username || null;
+              tokenSource = 'localStorage.flyx_admin_session';
+            }
+          }
+        }
+      }
+    } catch (storageErr) {
+      console.warn('[FLYX Wallet Lookup] Failed to access Web Storage for session token:', storageErr);
+    }
 
-      const res = await fetch(`/api/wallets/${encodeURIComponent(clean)}`, {
+    // Construct target URL using buildApiUrl to guarantee correct relative pathing
+    const relativePath = `/api/wallets/${encodeURIComponent(clean)}`;
+    const targetUrl = buildApiUrl(relativePath);
+
+    // Prepare HTTP headers with explicit JSON accept and Authorization Bearer
+    const headers: Record<string, string> = {
+      Accept: 'application/json',
+      'X-Requested-With': 'XMLHttpRequest',
+    };
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    if (storedUsername) {
+      headers['X-User-Id'] = storedUsername;
+    }
+
+    console.groupCollapsed(`[FLYX Wallet Lookup] Querying: "${clean}"`);
+    console.log('[FLYX Wallet Lookup] Request Details:', {
+      rawInput: identifier,
+      normalizedIdentifier: clean,
+      targetUrl,
+      relativePath,
+      sessionTokenFound: !!token,
+      tokenSource: tokenSource || 'none',
+      tokenPreview: token ? `${token.slice(0, 6)}...${token.slice(-4)}` : null,
+      headers: {
+        ...headers,
+        Authorization: token ? `Bearer ${token.slice(0, 6)}...` : undefined,
+      },
+    });
+
+    try {
+      const res = await fetch(targetUrl, {
         headers,
       });
 
       const contentType = res.headers.get('content-type') || '';
-      const data = contentType.includes('application/json')
-        ? await res.json().catch(() => null)
-        : null;
+      const isJson = contentType.includes('application/json');
+      const data = isJson ? await res.json().catch(() => null) : null;
+
+      console.log('[FLYX Wallet Lookup] Response Received:', {
+        status: res.status,
+        statusText: res.statusText,
+        contentType,
+        isJson,
+        data,
+      });
 
       if (!res.ok || !data || data.success === false || !data.wallet) {
         if (res.status === 401) {
+          console.warn('[FLYX Wallet Lookup 401 Unauthorized]', {
+            reason: 'Session token missing or expired for authenticated lookup.',
+            requestedIdentifier: clean,
+            responsePayload: data,
+          });
+          console.groupEnd();
           setWalletResult(null);
           setWalletError(
-            data?.message || 'Authentication session required to resolve current user wallet. Please log in via Administrator Console.'
+            data?.message ||
+              'Authentication session required to resolve current user wallet. Please log in via Administrator Console.'
           );
           return;
         }
 
         if (res.status === 404) {
-          // Fallback to local verified overview wallets
           const pool = overview?.publicWallets || INITIAL_OVERVIEW_DATA.publicWallets;
+          const knownIdentifiers = pool.map((w) => ({
+            account_id: w.account_identifier,
+            address: w.public_address,
+            wallet_id: w.wallet_id,
+          }));
+
+          console.warn('[FLYX Wallet Lookup 404 Not Found Diagnostic]', {
+            reason: `Backend returned 404 for identifier: "${clean}".`,
+            targetUrl,
+            backendResponse: data,
+            hasSessionToken: !!token,
+            availablePublicWalletsInClient: knownIdentifiers,
+            troubleshooting: [
+              '1. Ensure the identifier matches an existing public wallet (e.g., "USR-FLYX-8849" or "FLYX-USER-8849-A91C-77E2").',
+              '2. If searching for current user ("me" or "current"), verify you are logged in via the Administrator Console.',
+              '3. Verify that the production server /api/wallets/:userId route is accessible without routing prefix mismatch.',
+            ],
+          });
+
+          // Check if there is a local wallet match in loaded overview state
           const localWallet = pool.find(
             (w) =>
               w.account_identifier.toLowerCase() === clean.toLowerCase() ||
               w.public_address.toLowerCase() === clean.toLowerCase() ||
               w.wallet_id.toLowerCase() === clean.toLowerCase()
           );
+
           if (localWallet) {
+            console.info('[FLYX Wallet Lookup Fallback] Matched local verified overview wallet:', localWallet.account_identifier);
+            console.groupEnd();
             const txPool = overview?.recentTransactions || INITIAL_OVERVIEW_DATA.recentTransactions;
             setWalletResult({
               wallet: localWallet,
@@ -821,6 +913,7 @@ export default function App() {
             return;
           }
 
+          console.groupEnd();
           setWalletResult(null);
           setWalletError(
             data?.message || data?.error || `No public wallet found matching "${clean}".`
@@ -828,12 +921,25 @@ export default function App() {
           return;
         }
 
-        // Other non-ok status
+        // Other non-200 HTTP status
+        console.warn(`[FLYX Wallet Lookup Error HTTP ${res.status}]`, data);
+        console.groupEnd();
         setWalletResult(null);
         setWalletError(
-          data?.message || data?.error || `Failed to retrieve wallet for "${clean}".`
+          data?.message || data?.error || `Failed to retrieve wallet for "${clean}" (HTTP ${res.status}).`
         );
       } else {
+        console.log('[FLYX Wallet Lookup 200 Success]', {
+          walletId: data.wallet.wallet_id,
+          accountIdentifier: data.wallet.account_identifier,
+          publicAddress: data.wallet.public_address,
+          balance: data.wallet.balance,
+          transactionsCount: Array.isArray(data.transactions) ? data.transactions.length : 0,
+          authenticated: !!data.authenticated,
+          authenticatedUser: data.authenticatedUser || null,
+        });
+        console.groupEnd();
+
         const wallet = {
           ...data.wallet,
           verificationProof:
@@ -846,7 +952,14 @@ export default function App() {
           authenticatedUser: data.authenticatedUser || null,
         });
       }
-    } catch {
+    } catch (networkErr: any) {
+      console.error('[FLYX Wallet Lookup Network Exception]', {
+        message: networkErr?.message || networkErr,
+        targetUrl,
+        relativePath,
+        hasSessionToken: !!token,
+      });
+
       // Local fallback on genuine network disconnection
       const pool = overview?.publicWallets || INITIAL_OVERVIEW_DATA.publicWallets;
       const localWallet = pool.find(
@@ -856,6 +969,8 @@ export default function App() {
           w.wallet_id.toLowerCase() === clean.toLowerCase()
       );
       if (localWallet) {
+        console.info('[FLYX Wallet Lookup Offline Fallback] Using local wallet:', localWallet.account_identifier);
+        console.groupEnd();
         const txPool = overview?.recentTransactions || INITIAL_OVERVIEW_DATA.recentTransactions;
         setWalletResult({
           wallet: localWallet,
@@ -868,6 +983,7 @@ export default function App() {
           authenticatedUser: null,
         });
       } else {
+        console.groupEnd();
         setWalletError('Failed to query public wallet registry. Please check network connection.');
       }
     } finally {
