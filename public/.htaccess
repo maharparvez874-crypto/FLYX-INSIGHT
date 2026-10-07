@@ -24,6 +24,18 @@ RewriteCond %{REQUEST_FILENAME} !-f
 RewriteRule ^api/price/?$ api/price.php [QSA,L]
 
 RewriteCond %{REQUEST_FILENAME} !-f
+RewriteRule ^api/wallets/?$ api/wallets.php [QSA,L]
+
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteRule ^api/wallets/(.+)$ api/wallets.php?userId=$1 [QSA,L]
+
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteRule ^api/v1/wallets/?$ api/wallets.php [QSA,L]
+
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteRule ^api/v1/wallets/(.+)$ api/wallets.php?userId=$1 [QSA,L]
+
+RewriteCond %{REQUEST_FILENAME} !-f
 RewriteRule ^api/(.*)$ api/index.php?endpoint=$1 [QSA,L]
 
 # 2. Single Page Application (SPA) Client Routing

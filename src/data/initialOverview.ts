@@ -24,7 +24,7 @@ export const INITIAL_OVERVIEW_DATA: OverviewResponse = {
     "liquidity_allocation_supply": "120000000.00000000",
     "ecosystem_rewards_supply": "180000000.00000000",
     "strategic_reserve_supply": "50000000.00000000",
-    "active_wallets_count": 8,
+    "active_wallets_count": 9,
     "total_ledger_transactions": 12,
     "last_reconciled_at": "2026-10-05T18:30:00Z"
   },
@@ -444,6 +444,23 @@ export const INITIAL_OVERVIEW_DATA: OverviewResponse = {
       "is_public": true,
       "created_at": "2026-01-22T15:00:00Z",
       "last_activity_at": "2026-10-05T15:10:00Z"
+    },
+    {
+      "wallet_id": "WL-0009",
+      "public_address": "FLYX-USER-5520-C33E-991A",
+      "account_identifier": "USR-FLYX-5520",
+      "label": "Verified FlyX Innovator & Ecosystem Pioneer #5520",
+      "wallet_type": "USER_WALLET",
+      "balance": "218450.00000000",
+      "locked_balance": "15000.00000000",
+      "total_received": "235000.00000000",
+      "total_sent": "16550.00000000",
+      "mining_rewards_earned": "78450.00000000",
+      "transaction_count": 82,
+      "account_status": "ACTIVE",
+      "is_public": true,
+      "created_at": "2026-02-15T10:00:00Z",
+      "last_activity_at": "2026-10-05T16:00:00Z"
     }
   ],
   "roadmap": [

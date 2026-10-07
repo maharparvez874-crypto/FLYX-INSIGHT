@@ -144,7 +144,7 @@ export const UserSmartContractSection: React.FC<UserSmartContractSectionProps> =
               Inspect Verified User Accounts:
             </span>
             <div className="flex flex-wrap items-center gap-1.5">
-              {userContracts.map((c) => (
+              {safeContracts.map((c) => (
                 <button
                   key={c.user_id}
                   type="button"

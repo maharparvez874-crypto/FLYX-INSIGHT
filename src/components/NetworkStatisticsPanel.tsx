@@ -81,7 +81,7 @@ export const NetworkStatisticsPanel: React.FC<NetworkStatisticsPanelProps> = ({
           </h2>
           <span className="hidden sm:inline text-xs text-[#9CA3AF]">·</span>
           <span className="hidden sm:inline font-mono text-[11px] text-emerald-400">
-            {overview.networkStats.bridgeConnectionToFlyxCoin.apiBridgeStatus}
+            {overview?.networkStats?.bridgeConnectionToFlyxCoin?.apiBridgeStatus || 'AUTHENTICATED_OFF_CHAIN_SYNC'}
           </span>
         </div>
 
@@ -123,7 +123,7 @@ export const NetworkStatisticsPanel: React.FC<NetworkStatisticsPanelProps> = ({
             </span>
           </div>
           <div className="font-mono text-[11px] text-[#6B7280]">
-            Engine: {overview.databaseEngineInfo.mysqlConnectionMode}
+            Engine: {overview?.databaseEngineInfo?.mysqlConnectionMode || 'MYSQL_NORMALIZED_LEDGER_ENGINE'}
           </div>
         </div>
 

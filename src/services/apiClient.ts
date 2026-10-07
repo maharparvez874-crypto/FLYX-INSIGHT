@@ -8,7 +8,7 @@
  * - Exponential backoff on transient errors to prevent rapid console error spam
  */
 
-import { OverviewResponse } from '../types/flyx.ts';
+import { OverviewResponse, PublicWalletRecord, LedgerTransaction } from '../types/flyx.ts';
 import { LivePriceData } from '../components/LivePricePanel.tsx';
 
 function getApiBaseUrl(): string {
@@ -96,3 +96,44 @@ export async function getOverview(): Promise<OverviewResponse> {
 export async function getPrice(): Promise<LivePriceData> {
   return fetchWithDeduplication<LivePriceData>('/api/price');
 }
+
+export interface WalletLookupResponse {
+  success: boolean;
+  authenticated?: boolean;
+  authenticatedUser?: string | null;
+  wallet: PublicWalletRecord;
+  transactions: LedgerTransaction[];
+}
+
+/**
+ * Looks up a verified public or authenticated user wallet by user ID, address, or identifier.
+ */
+export async function getWallet(userId: string): Promise<WalletLookupResponse> {
+  const clean = userId.trim();
+  const token =
+    typeof sessionStorage !== 'undefined'
+      ? sessionStorage.getItem('flyx_session_token') ||
+        (() => {
+          try {
+            const raw = sessionStorage.getItem('flyx_admin_session');
+            return raw ? JSON.parse(raw)?.sessionToken : null;
+          } catch {
+            return null;
+          }
+        })()
+      : typeof localStorage !== 'undefined'
+      ? localStorage.getItem('flyx_session_token')
+      : null;
+
+  const headers: Record<string, string> = {
+    Accept: 'application/json',
+  };
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  return fetchWithDeduplication<WalletLookupResponse>(`/api/wallets/${encodeURIComponent(clean)}`, {
+    headers,
+  });
+}
+

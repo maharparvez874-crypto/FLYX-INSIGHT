@@ -470,6 +470,8 @@ export default function App() {
   const [walletResult, setWalletResult] = useState<{
     wallet: PublicWalletRecord;
     transactions: LedgerTransaction[];
+    authenticated?: boolean;
+    authenticatedUser?: string | null;
   } | null>({
     wallet: defaultInitialWallet,
     transactions: INITIAL_OVERVIEW_DATA.recentTransactions.filter(
@@ -477,6 +479,8 @@ export default function App() {
         t.sender_wallet.toLowerCase() === defaultInitialWallet.public_address.toLowerCase() ||
         t.receiver_wallet.toLowerCase() === defaultInitialWallet.public_address.toLowerCase()
     ),
+    authenticated: false,
+    authenticatedUser: null,
   });
   const [walletSortField, setWalletSortField] = useState<SortField>('created_at');
   const [walletSortDirection, setWalletSortDirection] = useState<SortDirection>('desc');
@@ -621,12 +625,60 @@ export default function App() {
     const fetchInitial = async () => {
       try {
         const t0 = performance.now();
-        const data = await getOverview();
-        if (isMounted && data) {
+        const rawData = await getOverview();
+        if (isMounted && rawData) {
           const rtt = Math.max(2, Math.round(performance.now() - t0));
           setLedgerLatencyMs(rtt);
-          setOverview(data);
-          setFilteredTransactions(data.recentTransactions);
+
+          const merged: OverviewResponse = {
+            ...INITIAL_OVERVIEW_DATA,
+            ...rawData,
+            allocations: Array.isArray(rawData.allocations) && rawData.allocations.length > 0
+              ? rawData.allocations
+              : INITIAL_OVERVIEW_DATA.allocations,
+            publicWallets: Array.isArray(rawData.publicWallets) && rawData.publicWallets.length > 0
+              ? rawData.publicWallets
+              : INITIAL_OVERVIEW_DATA.publicWallets,
+            recentTransactions: Array.isArray(rawData.recentTransactions) && rawData.recentTransactions.length > 0
+              ? rawData.recentTransactions
+              : INITIAL_OVERVIEW_DATA.recentTransactions,
+            roadmap: Array.isArray(rawData.roadmap) && rawData.roadmap.length > 0
+              ? rawData.roadmap.map((phase) => ({
+                  ...phase,
+                  deliverables: Array.isArray(phase.deliverables) ? phase.deliverables : [],
+                }))
+              : INITIAL_OVERVIEW_DATA.roadmap,
+            whitepaper: Array.isArray(rawData.whitepaper) && rawData.whitepaper.length > 0
+              ? rawData.whitepaper.map((wp) => ({
+                  ...wp,
+                  key_takeaways: Array.isArray(wp.key_takeaways) ? wp.key_takeaways : [],
+                }))
+              : INITIAL_OVERVIEW_DATA.whitepaper,
+            announcements: Array.isArray(rawData.announcements) && rawData.announcements.length > 0
+              ? rawData.announcements
+              : INITIAL_OVERVIEW_DATA.announcements,
+            audits: Array.isArray(rawData.audits) && rawData.audits.length > 0
+              ? rawData.audits
+              : INITIAL_OVERVIEW_DATA.audits,
+            futureBlockchainServices: Array.isArray(rawData.futureBlockchainServices) && rawData.futureBlockchainServices.length > 0
+              ? rawData.futureBlockchainServices
+              : INITIAL_OVERVIEW_DATA.futureBlockchainServices,
+            miningPlans: Array.isArray(rawData.miningPlans) && rawData.miningPlans.length > 0
+              ? rawData.miningPlans
+              : INITIAL_OVERVIEW_DATA.miningPlans,
+            userContractAddresses: Array.isArray(rawData.userContractAddresses) && rawData.userContractAddresses.length > 0
+              ? rawData.userContractAddresses
+              : INITIAL_OVERVIEW_DATA.userContractAddresses,
+            supplyStats: rawData.supplyStats || INITIAL_OVERVIEW_DATA.supplyStats,
+            tokenInfo: rawData.tokenInfo || INITIAL_OVERVIEW_DATA.tokenInfo,
+            miningStats: rawData.miningStats || INITIAL_OVERVIEW_DATA.miningStats,
+            systemHealth: rawData.systemHealth || INITIAL_OVERVIEW_DATA.systemHealth,
+            supplyVerification: rawData.supplyVerification || INITIAL_OVERVIEW_DATA.supplyVerification,
+            databaseEngineInfo: rawData.databaseEngineInfo || INITIAL_OVERVIEW_DATA.databaseEngineInfo,
+          };
+
+          setOverview(merged);
+          setFilteredTransactions(merged.recentTransactions);
           setLastSyncTime(new Date().toISOString().slice(11, 19));
           setError(null);
           await performWalletLookup('USR-FLYX-8849');
@@ -696,7 +748,7 @@ export default function App() {
     }
   };
 
-  // Public Wallet Lookup Handler
+  // Public & Authenticated Wallet Lookup Handler
   const performWalletLookup = async (identifier: string) => {
     const clean = identifier.trim();
     if (!clean) return;
@@ -704,55 +756,83 @@ export default function App() {
     setWalletLoading(true);
     setWalletError(null);
     try {
-      const res = await fetch(`/api/wallets/${encodeURIComponent(clean)}`);
-      const data = await res.json().catch(() => null);
-      if (!res.ok || !data || (data.success === false && !data.wallet)) {
-        // Fallback to local verified overview wallets
-        const pool = overview?.publicWallets || INITIAL_OVERVIEW_DATA.publicWallets;
-        const localWallet = pool.find(
-          (w) =>
-            w.account_identifier.toLowerCase() === clean.toLowerCase() ||
-            w.public_address.toLowerCase() === clean.toLowerCase() ||
-            w.wallet_id.toLowerCase() === clean.toLowerCase()
-        );
-        if (localWallet) {
-          const txPool = overview?.recentTransactions || INITIAL_OVERVIEW_DATA.recentTransactions;
-          setWalletResult({
-            wallet: localWallet,
-            transactions: txPool.filter(
-              (t) =>
-                t.sender_wallet.toLowerCase() === localWallet.public_address.toLowerCase() ||
-                t.receiver_wallet.toLowerCase() === localWallet.public_address.toLowerCase()
-            ),
-          });
-        } else {
+      // Resolve authentication session token if present
+      const token =
+        typeof sessionStorage !== 'undefined'
+          ? sessionStorage.getItem('flyx_session_token') ||
+            (() => {
+              try {
+                const raw = sessionStorage.getItem('flyx_admin_session');
+                return raw ? JSON.parse(raw)?.sessionToken : null;
+              } catch {
+                return null;
+              }
+            })()
+          : typeof localStorage !== 'undefined'
+          ? localStorage.getItem('flyx_session_token')
+          : null;
+
+      const headers: Record<string, string> = {
+        Accept: 'application/json',
+      };
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      const res = await fetch(`/api/wallets/${encodeURIComponent(clean)}`, {
+        headers,
+      });
+
+      const contentType = res.headers.get('content-type') || '';
+      const data = contentType.includes('application/json')
+        ? await res.json().catch(() => null)
+        : null;
+
+      if (!res.ok || !data || data.success === false || !data.wallet) {
+        if (res.status === 401) {
+          setWalletResult(null);
+          setWalletError(
+            data?.message || 'Authentication session required to resolve current user wallet. Please log in via Administrator Console.'
+          );
+          return;
+        }
+
+        if (res.status === 404) {
+          // Fallback to local verified overview wallets
+          const pool = overview?.publicWallets || INITIAL_OVERVIEW_DATA.publicWallets;
+          const localWallet = pool.find(
+            (w) =>
+              w.account_identifier.toLowerCase() === clean.toLowerCase() ||
+              w.public_address.toLowerCase() === clean.toLowerCase() ||
+              w.wallet_id.toLowerCase() === clean.toLowerCase()
+          );
+          if (localWallet) {
+            const txPool = overview?.recentTransactions || INITIAL_OVERVIEW_DATA.recentTransactions;
+            setWalletResult({
+              wallet: localWallet,
+              transactions: txPool.filter(
+                (t) =>
+                  t.sender_wallet.toLowerCase() === localWallet.public_address.toLowerCase() ||
+                  t.receiver_wallet.toLowerCase() === localWallet.public_address.toLowerCase()
+              ),
+              authenticated: false,
+              authenticatedUser: null,
+            });
+            return;
+          }
+
           setWalletResult(null);
           setWalletError(
             data?.message || data?.error || `No public wallet found matching "${clean}".`
           );
+          return;
         }
-      } else if (!data.wallet) {
-        const pool = overview?.publicWallets || INITIAL_OVERVIEW_DATA.publicWallets;
-        const localWallet = pool.find(
-          (w) =>
-            w.account_identifier.toLowerCase() === clean.toLowerCase() ||
-            w.public_address.toLowerCase() === clean.toLowerCase() ||
-            w.wallet_id.toLowerCase() === clean.toLowerCase()
+
+        // Other non-ok status
+        setWalletResult(null);
+        setWalletError(
+          data?.message || data?.error || `Failed to retrieve wallet for "${clean}".`
         );
-        if (localWallet) {
-          const txPool = overview?.recentTransactions || INITIAL_OVERVIEW_DATA.recentTransactions;
-          setWalletResult({
-            wallet: localWallet,
-            transactions: txPool.filter(
-              (t) =>
-                t.sender_wallet.toLowerCase() === localWallet.public_address.toLowerCase() ||
-                t.receiver_wallet.toLowerCase() === localWallet.public_address.toLowerCase()
-            ),
-          });
-        } else {
-          setWalletResult(null);
-          setWalletError(`No public wallet found matching "${clean}".`);
-        }
       } else {
         const wallet = {
           ...data.wallet,
@@ -762,10 +842,34 @@ export default function App() {
         setWalletResult({
           wallet,
           transactions: Array.isArray(data.transactions) ? data.transactions : [],
+          authenticated: !!data.authenticated,
+          authenticatedUser: data.authenticatedUser || null,
         });
       }
     } catch {
-      setWalletError('Failed to query public wallet registry. Please check network connection.');
+      // Local fallback on genuine network disconnection
+      const pool = overview?.publicWallets || INITIAL_OVERVIEW_DATA.publicWallets;
+      const localWallet = pool.find(
+        (w) =>
+          w.account_identifier.toLowerCase() === clean.toLowerCase() ||
+          w.public_address.toLowerCase() === clean.toLowerCase() ||
+          w.wallet_id.toLowerCase() === clean.toLowerCase()
+      );
+      if (localWallet) {
+        const txPool = overview?.recentTransactions || INITIAL_OVERVIEW_DATA.recentTransactions;
+        setWalletResult({
+          wallet: localWallet,
+          transactions: txPool.filter(
+            (t) =>
+              t.sender_wallet.toLowerCase() === localWallet.public_address.toLowerCase() ||
+              t.receiver_wallet.toLowerCase() === localWallet.public_address.toLowerCase()
+          ),
+          authenticated: false,
+          authenticatedUser: null,
+        });
+      } else {
+        setWalletError('Failed to query public wallet registry. Please check network connection.');
+      }
     } finally {
       setWalletLoading(false);
     }
@@ -1679,7 +1783,7 @@ export default function App() {
             </div>
 
             <div className="w-full h-5 rounded-lg overflow-hidden flex bg-black/40 p-0.5 gap-0.5">
-              {overview.allocations.map((alloc) => (
+              {(overview?.allocations || INITIAL_OVERVIEW_DATA.allocations).map((alloc) => (
                 <div
                   key={alloc.id}
                   style={{
@@ -1697,7 +1801,7 @@ export default function App() {
 
             {/* Legend Grid */}
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 pt-2">
-              {overview.allocations.map((alloc) => (
+              {(overview?.allocations || INITIAL_OVERVIEW_DATA.allocations).map((alloc) => (
                 <div key={alloc.id} className="space-y-1">
                   <div className="flex items-center gap-2 text-xs font-medium">
                     <span
@@ -1754,7 +1858,7 @@ export default function App() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/10">
-                  {overview.allocations.map((alloc) => (
+                  {(overview?.allocations || INITIAL_OVERVIEW_DATA.allocations).map((alloc) => (
                     <tr
                       key={alloc.id}
                       className={`transition-colors ${
@@ -3821,7 +3925,7 @@ export default function App() {
             {/* Quick-Select Public Wallets */}
             <div className="flex flex-wrap items-center gap-2 text-xs">
               <span className="text-[#9CA3AF]">Quick Inspect Public Accounts & Vaults:</span>
-              {overview.publicWallets.map((w) => (
+              {(overview?.publicWallets || INITIAL_OVERVIEW_DATA.publicWallets).map((w) => (
                 <button
                   key={w.wallet_id}
                   type="button"
@@ -3865,6 +3969,14 @@ export default function App() {
                         <span aria-hidden="true">·</span>
                         <span className="text-cyan-400 font-mono text-[10px]">
                           Proof: {walletResult.wallet.verificationProof}
+                        </span>
+                      </>
+                    )}
+                    {walletResult.authenticated && walletResult.authenticatedUser && (
+                      <>
+                        <span aria-hidden="true">·</span>
+                        <span className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-amber-400/15 text-amber-300 border border-amber-400/30">
+                          Authenticated: {walletResult.authenticatedUser}
                         </span>
                       </>
                     )}
@@ -4108,7 +4220,7 @@ export default function App() {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
             {/* Chapter Selector Sidebar */}
             <div className="lg:col-span-4 space-y-1.5">
-              {overview.whitepaper.map((sec) => (
+              {(overview?.whitepaper || INITIAL_OVERVIEW_DATA.whitepaper).map((sec) => (
                 <button
                   key={sec.id}
                   type="button"
@@ -4153,7 +4265,7 @@ export default function App() {
                   Key Architectural Takeaways
                 </div>
                 <ul className="space-y-2 text-xs sm:text-sm">
-                  {activeWhitepaperSection.key_takeaways.map((point, idx) => (
+                  {(activeWhitepaperSection?.key_takeaways || []).map((point, idx) => (
                     <li key={idx} className="flex items-start gap-2.5">
                       <CheckCircle2 className="w-4 h-4 text-[#D4AF37] shrink-0 mt-0.5" />
                       <span>{point}</span>
@@ -4185,7 +4297,7 @@ export default function App() {
 
           {/* 5 Phase Selector Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
-            {overview.roadmap.map((phase) => {
+            {(overview?.roadmap || INITIAL_OVERVIEW_DATA.roadmap).map((phase) => {
               const isSelected = phase.phase_number === activeRoadmapPhase.phase_number;
               return (
                 <button
@@ -4256,7 +4368,7 @@ export default function App() {
             </p>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {activeRoadmapPhase.deliverables.map((deliv, i) => (
+              {(activeRoadmapPhase?.deliverables || []).map((deliv, i) => (
                 <div
                   key={i}
                   className="p-4 rounded-lg border border-white/10 bg-black/20 space-y-2"
@@ -4319,7 +4431,7 @@ export default function App() {
             </p>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {overview.futureBlockchainServices.map((srv) => (
+              {(overview?.futureBlockchainServices || INITIAL_OVERVIEW_DATA.futureBlockchainServices || []).map((srv) => (
                 <div
                   key={srv.serviceId}
                   className="p-4 rounded-xl border border-white/10 bg-black/20 space-y-2.5 flex flex-col justify-between"
@@ -4371,7 +4483,7 @@ export default function App() {
             </div>
 
             <div className="space-y-3">
-              {overview.announcements.map((ann) => (
+              {(overview?.announcements || INITIAL_OVERVIEW_DATA.announcements || []).map((ann) => (
                 <article
                   key={ann.id}
                   className={`p-5 rounded-xl border space-y-2 ${
@@ -4414,7 +4526,7 @@ export default function App() {
             </div>
 
             <div className="space-y-3">
-              {overview.audits.map((aud) => (
+              {(overview?.audits || INITIAL_OVERVIEW_DATA.audits || []).map((aud) => (
                 <div
                   key={aud.id}
                   className={`p-5 rounded-xl border space-y-2 ${

@@ -201,7 +201,7 @@ export const FUTURE_BLOCKCHAIN_SERVICES: ServiceModuleDescriptor[] = [
     deploymentState: 'ACTIVE_OFF_CHAIN',
     description:
       'Exposes intentionally public wallet balances, allocation lockups, and transaction counts while stripping all personal credentials and private keys.',
-    endpoints: ['/api/wallets', '/api/wallets/:identifier'],
+    endpoints: ['/api/wallets', '/api/wallets/:identifier', '/api/wallets/:userId'],
   },
   {
     serviceId: 'srv-verifier',

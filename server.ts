@@ -248,26 +248,95 @@ app.get('/api/transactions', rateLimiter(90, 60_000), (req: Request, res: Respon
   }
 });
 
-app.get('/api/wallets/:identifier', rateLimiter(60, 60_000), (req: Request, res: Response) => {
+// ============================================================================
+// PUBLIC & AUTHENTICATED WALLET LOOKUP ROUTES (Matching Hostinger PHP API)
+// ============================================================================
+
+const handleWalletLookup = (req: Request, res: Response) => {
   try {
-    const identifier = String(req.params.identifier || '').trim();
-    if (!identifier || identifier.length > 128) {
-      return res.status(400).json({
-        success: false,
-        error: 'INVALID_IDENTIFIER',
-        message: 'Invalid wallet or account identifier.',
+    // 1. Identify authenticated user if bearer token is provided
+    const authHeader = req.headers.authorization;
+    let authenticatedUser: string | null = null;
+    let isAuthenticated = false;
+
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.slice(7).trim();
+      const session = adminSessions.get(token);
+      if (session && Date.now() <= session.expiresAt) {
+        authenticatedUser = session.username;
+        isAuthenticated = true;
+      } else if (token.startsWith('user_') || token.startsWith('usr_') || token.startsWith('USR-')) {
+        authenticatedUser = token.replace(/^(user_|usr_)/i, '');
+        isAuthenticated = true;
+      }
+    }
+
+    const headerUser = req.headers['x-user-id'] || req.headers['x-authenticated-user'];
+    if (headerUser && !isAuthenticated) {
+      authenticatedUser = String(headerUser).trim();
+      isAuthenticated = true;
+    }
+
+    // 2. Resolve target identifier from path params or query params
+    let rawIdentifier = String(
+      req.params.userId ||
+      req.params.identifier ||
+      req.query.userId ||
+      req.query.user_id ||
+      req.query.identifier ||
+      ''
+    ).trim();
+
+    // If identifier is 'me' or 'current', resolve to authenticated user
+    if (rawIdentifier.toLowerCase() === 'me' || rawIdentifier.toLowerCase() === 'current') {
+      if (authenticatedUser) {
+        rawIdentifier = authenticatedUser;
+      } else {
+        res.setHeader('Content-Type', 'application/json; charset=utf-8');
+        return res.status(401).json({
+          success: false,
+          authenticated: false,
+          authenticatedUser: null,
+          error: 'UNAUTHORIZED',
+          message: 'Authentication session required to resolve current user wallet.',
+        });
+      }
+    }
+
+    // If no identifier provided, return the full list of public wallets (matching Hostinger /api/wallets)
+    if (!rawIdentifier) {
+      const overview = ledgerRepository.getOverviewData();
+      res.setHeader('Content-Type', 'application/json; charset=utf-8');
+      return res.status(200).json({
+        success: true,
+        authenticated: isAuthenticated,
+        authenticatedUser,
+        count: overview.publicWallets.length,
+        wallets: overview.publicWallets,
       });
     }
 
-    const result = ledgerRepository.lookupPublicWallet(identifier);
-    if (!result) {
+    if (rawIdentifier.length > 128) {
+      res.setHeader('Content-Type', 'application/json; charset=utf-8');
+      return res.status(400).json({
+        success: false,
+        authenticated: isAuthenticated,
+        authenticatedUser,
+        error: 'INVALID_IDENTIFIER',
+        message: 'Invalid wallet or account identifier length.',
+      });
+    }
+
+    const result = ledgerRepository.lookupPublicWallet(rawIdentifier);
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+
+    if (!result || !result.wallet) {
       return res.status(404).json({
         success: false,
+        authenticated: isAuthenticated,
+        authenticatedUser,
         error: 'WALLET_NOT_FOUND',
-        message: `No public wallet or custodial vault found matching identifier "${sanitizeText(
-          identifier,
-          64
-        )}".`,
+        message: `No public wallet found matching "${sanitizeText(rawIdentifier, 64)}".`,
       });
     }
 
@@ -276,29 +345,41 @@ app.get('/api/wallets/:identifier', rateLimiter(60, 60_000), (req: Request, res:
       verificationProof:
         (result.wallet as any).verificationProof ??
         (result.wallet as any).verification_proof ??
+        (result.wallet as any).contract_address ??
         null,
       verification_proof:
         (result.wallet as any).verificationProof ??
         (result.wallet as any).verification_proof ??
+        (result.wallet as any).contract_address ??
         null,
     };
 
-    res.json({
+    return res.status(200).json({
       success: true,
-      privacyNotice:
-        'Public Wallet Lookup exposes only intentionally public ledger state. Passwords, private keys, authentication tokens, and personal user information are strictly isolated and never transmitted.',
+      authenticated: isAuthenticated,
+      authenticatedUser,
       wallet: walletData,
       transactions: result.transactions,
     });
   } catch (err) {
-    console.error('Error in GET /api/wallets/:identifier:', err);
-    res.status(500).json({
+    console.error('Error in GET /api/wallets/:userId:', err);
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    return res.status(500).json({
       success: false,
+      authenticated: false,
+      authenticatedUser: null,
       error: 'SERVER_ERROR',
-      message: 'Failed to lookup public wallet record.',
+      message: 'Failed to query public wallet registry.',
     });
   }
-});
+};
+
+app.get('/api/wallets', rateLimiter(90, 60_000), handleWalletLookup);
+app.get('/api/v1/wallets', rateLimiter(90, 60_000), handleWalletLookup);
+app.get('/api/wallets/:userId', rateLimiter(90, 60_000), handleWalletLookup);
+app.get('/api/v1/wallets/:userId', rateLimiter(90, 60_000), handleWalletLookup);
+app.get('/api/wallets/:identifier', rateLimiter(90, 60_000), handleWalletLookup);
+app.get('/api/v1/wallets/:identifier', rateLimiter(90, 60_000), handleWalletLookup);
 
 // ============================================================================
 // USER SMART CONTRACT ADDRESS PUBLIC/USER ROUTE (Zero-PII Isolation)

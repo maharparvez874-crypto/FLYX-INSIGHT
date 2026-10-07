@@ -52,7 +52,19 @@ export const AdminConsoleModal: React.FC<AdminConsoleModalProps> = ({
   onOverviewUpdated,
   theme,
 }) => {
-  const [session, setSession] = useState<AdminSessionState | null>(null);
+  const [session, setSession] = useState<AdminSessionState | null>(() => {
+    try {
+      if (typeof sessionStorage !== 'undefined') {
+        const raw = sessionStorage.getItem('flyx_admin_session');
+        if (raw) return JSON.parse(raw);
+      }
+      if (typeof localStorage !== 'undefined') {
+        const raw = localStorage.getItem('flyx_admin_session');
+        if (raw) return JSON.parse(raw);
+      }
+    } catch {}
+    return null;
+  });
   const [username, setUsername] = useState('admin@flyxcoin.com');
   const [password, setPassword] = useState('');
   const [authError, setAuthError] = useState<string | null>(null);
@@ -241,6 +253,14 @@ export const AdminConsoleModal: React.FC<AdminConsoleModalProps> = ({
         return;
       }
       setSession(data);
+      if (typeof sessionStorage !== 'undefined') {
+        sessionStorage.setItem('flyx_session_token', data.sessionToken);
+        sessionStorage.setItem('flyx_admin_session', JSON.stringify(data));
+      }
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('flyx_session_token', data.sessionToken);
+        localStorage.setItem('flyx_admin_session', JSON.stringify(data));
+      }
       setPassword('');
     } catch {
       setAuthError('Network error during server authentication.');
@@ -258,6 +278,14 @@ export const AdminConsoleModal: React.FC<AdminConsoleModalProps> = ({
       });
     }
     setSession(null);
+    if (typeof sessionStorage !== 'undefined') {
+      sessionStorage.removeItem('flyx_session_token');
+      sessionStorage.removeItem('flyx_admin_session');
+    }
+    if (typeof localStorage !== 'undefined') {
+      localStorage.removeItem('flyx_session_token');
+      localStorage.removeItem('flyx_admin_session');
+    }
   };
 
   const handleSaveAllocation = async (e: React.FormEvent) => {
@@ -759,7 +787,7 @@ export const AdminConsoleModal: React.FC<AdminConsoleModalProps> = ({
                   <div className="text-xs font-semibold text-[#9CA3AF]">
                     Select Allocation Vault
                   </div>
-                  {overview.allocations.map((alloc) => (
+                  {(overview?.allocations || []).map((alloc) => (
                     <button
                       key={alloc.id}
                       type="button"
@@ -1532,7 +1560,7 @@ export const AdminConsoleModal: React.FC<AdminConsoleModalProps> = ({
                   <div className="text-xs font-semibold text-[#9CA3AF]">
                     Existing Official Announcements
                   </div>
-                  {overview.announcements.map((item) => (
+                  {(overview?.announcements || []).map((item) => (
                     <div
                       key={item.id}
                       className="p-3 rounded-lg border border-white/10 bg-black/20 flex items-start justify-between gap-3"
@@ -1561,7 +1589,7 @@ export const AdminConsoleModal: React.FC<AdminConsoleModalProps> = ({
             {activeTab === 'roadmap' && (
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div className="space-y-2">
-                  {overview.roadmap.map((p) => (
+                  {(overview?.roadmap || []).map((p) => (
                     <button
                       key={p.id}
                       type="button"
@@ -1665,7 +1693,7 @@ export const AdminConsoleModal: React.FC<AdminConsoleModalProps> = ({
             {activeTab === 'whitepaper' && (
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div className="space-y-1.5 max-h-[380px] overflow-y-auto pr-1">
-                  {overview.whitepaper.map((sec) => (
+                  {(overview?.whitepaper || []).map((sec) => (
                     <button
                       key={sec.id}
                       type="button"
