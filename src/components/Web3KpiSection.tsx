@@ -106,22 +106,33 @@ export const Web3KpiSection: React.FC<Web3KpiSectionProps> = ({
 }) => {
   const isDark = theme === 'dark';
 
+  const supplyStats = overview?.supplyStats || {
+    max_supply: '1000000000.00000000',
+    circulating_supply: '142660180.45000000',
+    distributed_supply: '166360180.45000000',
+    undistributed_supply: '833639819.55000000',
+    active_wallets_count: 8,
+    total_ledger_transactions: 12,
+  };
+  const allocations = Array.isArray(overview?.allocations) ? overview.allocations : [];
+  const publicWallets = Array.isArray(overview?.publicWallets) ? overview.publicWallets : [];
+
   // Real derived metrics
-  const maxSupplyNum = parseFloat(overview.supplyStats.max_supply) || 1000000000;
-  const circSupplyNum = parseFloat(overview.supplyStats.circulating_supply) || 142660180.45;
-  const holdersCount = overview.supplyStats.active_wallets_count || overview.publicWallets.length || 8;
-  const txCount = overview.supplyStats.total_ledger_transactions || 12;
+  const maxSupplyNum = parseFloat(supplyStats.max_supply) || 1000000000;
+  const circSupplyNum = parseFloat(supplyStats.circulating_supply) || 142660180.45;
+  const holdersCount = supplyStats.active_wallets_count || publicWallets.length || 8;
+  const txCount = supplyStats.total_ledger_transactions || 12;
 
   // Total mined from community mining allocation distributed amount
-  const miningAlloc = overview.allocations.find((a: TokenAllocation) => a.category_key === 'COMMUNITY_MINING');
+  const miningAlloc = allocations.find((a: TokenAllocation) => a?.category_key === 'COMMUNITY_MINING');
   const minedNum = miningAlloc ? parseFloat(miningAlloc.distributed_amount) : 12450.75;
 
   // Total locked / undistributed reserve supply
-  const lockedNum = parseFloat(overview.supplyStats.undistributed_supply) || 833639819.55;
+  const lockedNum = parseFloat(supplyStats.undistributed_supply) || 833639819.55;
 
   // Active verified user accounts (wallets of type USER_WALLET)
   const activeUserWalletsCount =
-    overview.publicWallets.filter((w: PublicWalletRecord) => w.wallet_type === 'USER_WALLET').length || 4;
+    publicWallets.filter((w: PublicWalletRecord) => w?.wallet_type === 'USER_WALLET').length || 4;
 
   const priceNum = parseFloat(priceUsd) || 3.5;
   const isPricePositive = !change24h.startsWith('-');
@@ -130,7 +141,7 @@ export const Web3KpiSection: React.FC<Web3KpiSectionProps> = ({
     {
       id: 'kpi-max-supply',
       title: 'TOTAL SUPPLY',
-      value: formatFlyxAmount(overview.supplyStats.max_supply, 0),
+      value: formatFlyxAmount(supplyStats.max_supply, 0),
       unit: 'FLYX',
       numericVal: maxSupplyNum,
       decimals: 0,

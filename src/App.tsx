@@ -54,6 +54,7 @@ import {
   unitsToDecimal,
 } from './services/blockchainAdapter.ts';
 import { getOverview, getPrice } from './services/apiClient.ts';
+import { INITIAL_OVERVIEW_DATA } from './data/initialOverview.ts';
 
 type SortField = 'created_at' | 'amount' | 'tx_type';
 type SortDirection = 'asc' | 'desc';
@@ -408,8 +409,8 @@ function playExportSuccessSound(): void {
 export default function App() {
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [overview, setOverview] = useState<OverviewResponse | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [overview, setOverview] = useState<OverviewResponse>(INITIAL_OVERVIEW_DATA);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Transaction Explorer Filter & Sort States
@@ -425,7 +426,9 @@ export default function App() {
   const [csvHighValueOnly, setCsvHighValueOnly] = useState(false);
   const [txSortField, setTxSortField] = useState<SortField>('created_at');
   const [txSortDirection, setTxSortDirection] = useState<SortDirection>('desc');
-  const [filteredTransactions, setFilteredTransactions] = useState<LedgerTransaction[]>([]);
+  const [filteredTransactions, setFilteredTransactions] = useState<LedgerTransaction[]>(
+    INITIAL_OVERVIEW_DATA.recentTransactions
+  );
   const [txListVersion, setTxListVersion] = useState(0);
   const [txLoading, setTxLoading] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState<LedgerTransaction | null>(null);
@@ -458,12 +461,23 @@ export default function App() {
     };
   }, []);
 
+  const defaultInitialWallet =
+    INITIAL_OVERVIEW_DATA.publicWallets.find((w) => w.account_identifier === 'USR-FLYX-8849') ||
+    INITIAL_OVERVIEW_DATA.publicWallets[0];
+
   // Public Wallet Lookup & History Sort States
   const [walletSearchInput, setWalletSearchInput] = useState('USR-FLYX-8849');
   const [walletResult, setWalletResult] = useState<{
     wallet: PublicWalletRecord;
     transactions: LedgerTransaction[];
-  } | null>(null);
+  } | null>({
+    wallet: defaultInitialWallet,
+    transactions: INITIAL_OVERVIEW_DATA.recentTransactions.filter(
+      (t) =>
+        t.sender_wallet.toLowerCase() === defaultInitialWallet.public_address.toLowerCase() ||
+        t.receiver_wallet.toLowerCase() === defaultInitialWallet.public_address.toLowerCase()
+    ),
+  });
   const [walletSortField, setWalletSortField] = useState<SortField>('created_at');
   const [walletSortDirection, setWalletSortDirection] = useState<SortDirection>('desc');
   const [walletError, setWalletError] = useState<string | null>(null);
@@ -605,25 +619,21 @@ export default function App() {
   useEffect(() => {
     let isMounted = true;
     const fetchInitial = async () => {
-      setLoading(true);
       try {
         const t0 = performance.now();
         const data = await getOverview();
-        if (isMounted) {
+        if (isMounted && data) {
           const rtt = Math.max(2, Math.round(performance.now() - t0));
           setLedgerLatencyMs(rtt);
           setOverview(data);
           setFilteredTransactions(data.recentTransactions);
           setLastSyncTime(new Date().toISOString().slice(11, 19));
+          setError(null);
           await performWalletLookup('USR-FLYX-8849');
         }
       } catch (err: any) {
         if (isMounted) {
-          setError(err.message || 'Unable to connect to FLYX Insight API.');
-        }
-      } finally {
-        if (isMounted) {
-          setLoading(false);
+          console.warn('FLYX Insight background sync standby:', err?.message || err);
         }
       }
     };
@@ -697,13 +707,52 @@ export default function App() {
       const res = await fetch(`/api/wallets/${encodeURIComponent(clean)}`);
       const data = await res.json().catch(() => null);
       if (!res.ok || !data || (data.success === false && !data.wallet)) {
-        setWalletResult(null);
-        setWalletError(
-          data?.message || data?.error || `No public wallet found matching "${clean}".`
+        // Fallback to local verified overview wallets
+        const pool = overview?.publicWallets || INITIAL_OVERVIEW_DATA.publicWallets;
+        const localWallet = pool.find(
+          (w) =>
+            w.account_identifier.toLowerCase() === clean.toLowerCase() ||
+            w.public_address.toLowerCase() === clean.toLowerCase() ||
+            w.wallet_id.toLowerCase() === clean.toLowerCase()
         );
+        if (localWallet) {
+          const txPool = overview?.recentTransactions || INITIAL_OVERVIEW_DATA.recentTransactions;
+          setWalletResult({
+            wallet: localWallet,
+            transactions: txPool.filter(
+              (t) =>
+                t.sender_wallet.toLowerCase() === localWallet.public_address.toLowerCase() ||
+                t.receiver_wallet.toLowerCase() === localWallet.public_address.toLowerCase()
+            ),
+          });
+        } else {
+          setWalletResult(null);
+          setWalletError(
+            data?.message || data?.error || `No public wallet found matching "${clean}".`
+          );
+        }
       } else if (!data.wallet) {
-        setWalletResult(null);
-        setWalletError(`No public wallet found matching "${clean}".`);
+        const pool = overview?.publicWallets || INITIAL_OVERVIEW_DATA.publicWallets;
+        const localWallet = pool.find(
+          (w) =>
+            w.account_identifier.toLowerCase() === clean.toLowerCase() ||
+            w.public_address.toLowerCase() === clean.toLowerCase() ||
+            w.wallet_id.toLowerCase() === clean.toLowerCase()
+        );
+        if (localWallet) {
+          const txPool = overview?.recentTransactions || INITIAL_OVERVIEW_DATA.recentTransactions;
+          setWalletResult({
+            wallet: localWallet,
+            transactions: txPool.filter(
+              (t) =>
+                t.sender_wallet.toLowerCase() === localWallet.public_address.toLowerCase() ||
+                t.receiver_wallet.toLowerCase() === localWallet.public_address.toLowerCase()
+            ),
+          });
+        } else {
+          setWalletResult(null);
+          setWalletError(`No public wallet found matching "${clean}".`);
+        }
       } else {
         const wallet = {
           ...data.wallet,
@@ -1117,7 +1166,7 @@ export default function App() {
     );
   };
 
-  if (loading || !overview) {
+  if (loading && !overview) {
     return (
       <div
         className={`min-h-screen flex flex-col items-center justify-center p-6 ${
@@ -1135,7 +1184,7 @@ export default function App() {
     );
   }
 
-  if (error) {
+  if (error && !overview) {
     return (
       <div className="min-h-screen flex items-center justify-center p-6 bg-[#090A0F] text-[#F5F2EB]">
         <div className="max-w-md p-6 rounded-xl border border-red-500/30 bg-[#10131C] text-center space-y-3">
@@ -1154,9 +1203,11 @@ export default function App() {
   }
 
   const activeWhitepaperSection =
-    overview.whitepaper.find((w) => w.slug === activeWpSlug) || overview.whitepaper[0];
+    (overview?.whitepaper || INITIAL_OVERVIEW_DATA.whitepaper).find((w) => w.slug === activeWpSlug) ||
+    (overview?.whitepaper || INITIAL_OVERVIEW_DATA.whitepaper)[0];
   const activeRoadmapPhase =
-    overview.roadmap.find((p) => p.phase_number === activePhaseNumber) || overview.roadmap[1];
+    (overview?.roadmap || INITIAL_OVERVIEW_DATA.roadmap).find((p) => p.phase_number === activePhaseNumber) ||
+    (overview?.roadmap || INITIAL_OVERVIEW_DATA.roadmap)[1];
 
   return (
     <div

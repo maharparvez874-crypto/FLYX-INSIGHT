@@ -40,9 +40,11 @@ export const TransactionVolumeChart: React.FC<TransactionVolumeChartProps> = ({
   const dailyData = useMemo<DailyVolumeBucket[]>(() => {
     // Anchor the 30-day window to the latest transaction timestamp or current date (2026-10-05)
     let anchorTime = new Date('2026-10-05T23:59:59Z').getTime();
-    if (transactions.length > 0) {
+    const txList = Array.isArray(transactions) ? transactions : [];
+    if (txList.length > 0) {
       let maxTxTime = 0;
-      for (const tx of transactions) {
+      for (const tx of txList) {
+        if (!tx || !tx.created_at) continue;
         const t = new Date(tx.created_at).getTime();
         if (!Number.isNaN(t) && t > maxTxTime) {
           maxTxTime = t;

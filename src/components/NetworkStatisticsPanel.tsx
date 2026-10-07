@@ -24,29 +24,31 @@ export const NetworkStatisticsPanel: React.FC<NetworkStatisticsPanelProps> = ({
   // Compute unique active accounts across public wallets and recent off-chain ledger activity
   const uniqueAccountsMetrics = useMemo(() => {
     const addressSet = new Set<string>();
-    for (const w of overview.publicWallets) {
-      addressSet.add(w.public_address.toLowerCase());
+    const wallets = Array.isArray(overview?.publicWallets) ? overview.publicWallets : [];
+    const txs = Array.isArray(overview?.recentTransactions) ? overview.recentTransactions : [];
+
+    for (const w of wallets) {
+      if (w?.public_address) {
+        addressSet.add(w.public_address.toLowerCase());
+      }
     }
-    for (const tx of overview.recentTransactions) {
-      addressSet.add(tx.sender_wallet.toLowerCase());
-      addressSet.add(tx.receiver_wallet.toLowerCase());
+    for (const tx of txs) {
+      if (tx?.sender_wallet) addressSet.add(tx.sender_wallet.toLowerCase());
+      if (tx?.receiver_wallet) addressSet.add(tx.receiver_wallet.toLowerCase());
     }
 
-    const totalTransactionsAcrossWallets = overview.publicWallets.reduce(
-      (sum, w) => sum + w.transaction_count,
+    const totalTransactionsAcrossWallets = wallets.reduce(
+      (sum, w) => sum + (w?.transaction_count || 0),
       0
     );
 
     return {
       uniqueTrackedAccounts: addressSet.size,
-      publicVaultsCount: overview.publicWallets.filter((w) => w.wallet_type !== 'USER_WALLET')
-        .length,
-      verifiedUserWalletsCount: overview.publicWallets.filter(
-        (w) => w.wallet_type === 'USER_WALLET'
-      ).length,
+      publicVaultsCount: wallets.filter((w) => w?.wallet_type !== 'USER_WALLET').length,
+      verifiedUserWalletsCount: wallets.filter((w) => w?.wallet_type === 'USER_WALLET').length,
       cumulativeSettlementCount: totalTransactionsAcrossWallets,
     };
-  }, [overview.publicWallets, overview.recentTransactions]);
+  }, [overview?.publicWallets, overview?.recentTransactions]);
 
   // Latency health classification
   const latencyLabel =

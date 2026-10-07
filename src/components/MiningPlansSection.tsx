@@ -68,7 +68,7 @@ export const MiningPlansSection: React.FC<MiningPlansSectionProps> = ({
           <p className="text-sm text-slate-300 max-w-2xl leading-relaxed">
             Direct real-time transparency feed connected to{' '}
             <a
-              href={tokenInfo.main_portal_url}
+              href={tokenInfo?.main_portal_url || 'https://flyxcoin.com'}
               target="_blank"
               rel="noopener noreferrer"
               className="text-[#FFB800] font-semibold underline underline-offset-4 hover:opacity-80"

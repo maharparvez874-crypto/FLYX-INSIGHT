@@ -42,8 +42,11 @@ async function fetchWithDeduplication<T>(endpoint: string, options?: RequestInit
   }
 
   const promise = (async () => {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000);
     try {
       const res = await fetch(url, {
+        signal: options?.signal || controller.signal,
         headers: {
           Accept: 'application/json',
           ...(options?.headers || {}),
@@ -71,6 +74,7 @@ async function fetchWithDeduplication<T>(endpoint: string, options?: RequestInit
       }
       return json as T;
     } finally {
+      clearTimeout(timeoutId);
       inFlightRequests.delete(cacheKey);
     }
   })();

@@ -35,7 +35,7 @@ export const TokenContractSection: React.FC<TokenContractSectionProps> = ({
   const [showQr, setShowQr] = useState(false);
 
   const contractAddress =
-    tokenInfo.contract_address || '0x71C8A1D3b28E3A759f20E2DbE08f906471E2D4F6';
+    tokenInfo?.contract_address || '0x71C8A1D3b28E3A759f20E2DbE08f906471E2D4F6';
 
   return (
     <section id="contract" className="relative z-10 scroll-mt-24 space-y-6">

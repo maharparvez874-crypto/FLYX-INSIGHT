@@ -39,7 +39,9 @@ export const AuditSummaryWidget: React.FC<AuditSummaryWidgetProps> = ({
     let highValueUnits = 0n;
     let standardUnits = 0n;
 
-    for (const tx of transactions) {
+    const safeTxs = Array.isArray(transactions) ? transactions : [];
+    for (const tx of safeTxs) {
+      if (!tx || !tx.amount) continue;
       const units = decimalToUnits(tx.amount);
       if (units >= highValueThresholdUnits) {
         highValueCount += 1;

@@ -35,8 +35,11 @@ export const UserSmartContractSection: React.FC<UserSmartContractSectionProps> =
 }) => {
   const isDark = theme === 'dark';
 
+  const safeContracts = Array.isArray(userContracts) ? userContracts : [];
+  const safeWallets = Array.isArray(publicWallets) ? publicWallets : [];
+
   // Selected or looked-up user
-  const defaultUser = userContracts[0] || null;
+  const defaultUser = safeContracts[0] || null;
   const [selectedUserId, setSelectedUserId] = useState<string>(
     defaultUser ? defaultUser.user_id : 'USR-FLYX-8849'
   );
@@ -46,19 +49,19 @@ export const UserSmartContractSection: React.FC<UserSmartContractSectionProps> =
 
   // Find active record
   const currentContract =
-    userContracts.find(
+    safeContracts.find(
       (c) =>
-        c.user_id.toLowerCase() === selectedUserId.toLowerCase() ||
-        c.wallet_address.toLowerCase() === selectedUserId.toLowerCase() ||
-        c.contract_address.toLowerCase() === selectedUserId.toLowerCase()
+        c?.user_id?.toLowerCase() === selectedUserId.toLowerCase() ||
+        c?.wallet_address?.toLowerCase() === selectedUserId.toLowerCase() ||
+        c?.contract_address?.toLowerCase() === selectedUserId.toLowerCase()
     ) || defaultUser;
 
   // Matching wallet record if available
   const matchingWallet = currentContract
-    ? publicWallets.find(
+    ? safeWallets.find(
         (w) =>
-          w.account_identifier.toLowerCase() === currentContract.user_id.toLowerCase() ||
-          w.public_address.toLowerCase() === currentContract.wallet_address.toLowerCase()
+          w?.account_identifier?.toLowerCase() === currentContract.user_id?.toLowerCase() ||
+          w?.public_address?.toLowerCase() === currentContract.wallet_address?.toLowerCase()
       )
     : null;
 
@@ -67,12 +70,12 @@ export const UserSmartContractSection: React.FC<UserSmartContractSectionProps> =
     const query = searchInput.trim().toLowerCase();
     if (!query) return;
 
-    const found = userContracts.find(
+    const found = safeContracts.find(
       (c) =>
-        c.user_id.toLowerCase() === query ||
-        (c.username && c.username.toLowerCase() === query) ||
-        c.wallet_address.toLowerCase() === query ||
-        c.contract_address.toLowerCase() === query
+        c?.user_id?.toLowerCase() === query ||
+        (c?.username && c.username.toLowerCase() === query) ||
+        c?.wallet_address?.toLowerCase() === query ||
+        c?.contract_address?.toLowerCase() === query
     );
 
     if (found) {

@@ -145,7 +145,11 @@ function createOfficialFlyxCoinTexture(): THREE.CanvasTexture {
 
   // Base headband of crown
   ctx.beginPath();
-  ctx.roundRect(-64, 8, 128, 22, 6);
+  if (typeof (ctx as any).roundRect === 'function') {
+    (ctx as any).roundRect(-64, 8, 128, 22, 6);
+  } else {
+    ctx.rect(-64, 8, 128, 22);
+  }
   ctx.fill();
   ctx.stroke();
 
